@@ -1,7 +1,22 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../hooks/useAuth';
-import { Alert } from '../../../shared/components/Alert';
-import { Lock, Mail, Eye, EyeOff, ShieldAlert, ArrowRight, Loader2 } from 'lucide-react';
+import { DSButton, DSInput, DSAlert } from '../../../design-system';
+import { Lock, Mail, Eye, EyeOff, ShieldAlert, ArrowRight } from 'lucide-react';
+
+const loginFormSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'El correo electrónico es obligatorio')
+    .email('Ingrese un formato de correo electrónico válido'),
+  password: z
+    .string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
+});
+
+type LoginFormData = z.infer<typeof loginFormSchema>;
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -9,17 +24,25 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login, isLoading, error, lockInfo, attemptsRemaining, clearError } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      await login({ email, password });
+      await login(data);
     } catch {
-      // Handled in context
+      // Handled in store
     }
   };
 
@@ -30,7 +53,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
           Iniciar Sesión
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Ingresa tus credenciales para acceder a tu cuenta
+          Ingresa tus credenciales para acceder a tu panel financiero
         </p>
       </div>
 
@@ -54,7 +77,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
 
       {error && !lockInfo?.isLocked && (
         <div className="mb-5">
-          <Alert
+          <DSAlert
             type="error"
             message={error}
             onClose={clearError}
@@ -64,87 +87,56 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
 
       {attemptsRemaining !== null && attemptsRemaining > 0 && !lockInfo?.isLocked && (
         <div className="mb-5">
-          <Alert
+          <DSAlert
             type="warning"
             message={`Credenciales incorrectas. Te quedan ${attemptsRemaining} intento(s) antes de que la cuenta se bloquee temporalmente.`}
           />
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-            Correo electrónico
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Mail className="w-4 h-4" />
-            </div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) clearError();
-              }}
-              placeholder="tu@correo.com"
-              disabled={isLoading || Boolean(lockInfo?.isLocked)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <DSInput
+          label="Correo electrónico"
+          type="email"
+          isRequired
+          placeholder="tu@correo.com"
+          leftIcon={<Mail className="w-4 h-4" />}
+          disabled={isLoading || Boolean(lockInfo?.isLocked)}
+          error={errors.email?.message}
+          {...register('email')}
+        />
 
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-              Contraseña
-            </label>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Lock className="w-4 h-4" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (error) clearError();
-              }}
-              placeholder="••••••••"
-              disabled={isLoading || Boolean(lockInfo?.isLocked)}
-              className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            />
+        <DSInput
+          label="Contraseña"
+          type={showPassword ? 'text' : 'password'}
+          isRequired
+          placeholder="••••••••"
+          leftIcon={<Lock className="w-4 h-4" />}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </div>
-        </div>
-
-        <button
-          type="submit"
+          }
           disabled={isLoading || Boolean(lockInfo?.isLocked)}
-          className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl text-sm shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          error={errors.password?.message}
+          {...register('password')}
+        />
+
+        <DSButton
+          type="submit"
+          fullWidth
+          size="md"
+          isLoading={isLoading}
+          disabled={Boolean(lockInfo?.isLocked)}
+          rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Iniciando sesión...</span>
-            </>
-          ) : (
-            <>
-              <span>Iniciar Sesión</span>
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </button>
+          {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+        </DSButton>
       </form>
 
       <div className="mt-6 pt-6 border-t border-slate-100 text-center">

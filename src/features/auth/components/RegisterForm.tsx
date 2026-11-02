@@ -1,39 +1,67 @@
 import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useAuth } from '../hooks/useAuth';
-import { Alert } from '../../../shared/components/Alert';
-import { Lock, Mail, User as UserIcon, Eye, EyeOff, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { DSButton, DSInput, DSAlert } from '../../../design-system';
+import { Lock, Mail, User as UserIcon, Eye, EyeOff, ArrowRight } from 'lucide-react';
+
+const registerFormSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'El nombre debe tener al menos 2 caracteres')
+      .max(60, 'El nombre no puede exceder 60 caracteres'),
+    email: z
+      .string()
+      .min(1, 'El correo electrónico es obligatorio')
+      .email('Ingrese un formato de correo electrónico válido'),
+    password: z
+      .string()
+      .min(6, 'La contraseña debe tener al menos 6 caracteres'),
+    confirmPassword: z
+      .string()
+      .min(6, 'Debe confirmar su contraseña'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword'],
+  });
+
+type RegisterFormData = z.infer<typeof registerFormSchema>;
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
-  const { register, isLoading, error, clearError } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const { register: registerAuth, isLoading, error, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerFormSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
-    if (password.length < 6) {
-      setValidationError('La contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setValidationError('Las contraseñas no coinciden.');
-      return;
-    }
-
+  const onSubmit = async (data: RegisterFormData) => {
     try {
-      await register({ name, email, password });
+      await registerAuth({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
     } catch {
-      // Handled in context
+      // Handled in authStore
     }
   };
 
@@ -44,142 +72,85 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           Crear una Cuenta
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Únete a FinanAPP y toma el control de tus finanzas
+          Únete a FinanAPP y toma el control inteligente de tu dinero
         </p>
       </div>
 
-      {(validationError || error) && (
+      {error && (
         <div className="mb-5">
-          <Alert
+          <DSAlert
             type="error"
-            title="Validación de registro"
-            message={validationError || error || ''}
-            onClose={() => {
-              setValidationError(null);
-              clearError();
-            }}
+            title="Error al registrar"
+            message={error}
+            onClose={clearError}
           />
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-            Nombre completo
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <UserIcon className="w-4 h-4" />
-            </div>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setValidationError(null);
-              }}
-              placeholder="Ej. Juan Pérez"
-              disabled={isLoading}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors disabled:opacity-60"
-            />
-          </div>
-        </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <DSInput
+          label="Nombre completo"
+          type="text"
+          isRequired
+          placeholder="Ej. Juan Pérez"
+          leftIcon={<UserIcon className="w-4 h-4" />}
+          disabled={isLoading}
+          error={errors.name?.message}
+          {...register('name')}
+        />
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-            Correo electrónico
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Mail className="w-4 h-4" />
-            </div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setValidationError(null);
-              }}
-              placeholder="tu@correo.com"
-              disabled={isLoading}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors disabled:opacity-60"
-            />
-          </div>
-        </div>
+        <DSInput
+          label="Correo electrónico"
+          type="email"
+          isRequired
+          placeholder="tu@correo.com"
+          leftIcon={<Mail className="w-4 h-4" />}
+          disabled={isLoading}
+          error={errors.email?.message}
+          {...register('email')}
+        />
 
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-            Contraseña (mínimo 6 caracteres)
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Lock className="w-4 h-4" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setValidationError(null);
-              }}
-              placeholder="••••••••"
-              disabled={isLoading}
-              className="w-full pl-10 pr-11 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors disabled:opacity-60"
-            />
+        <DSInput
+          label="Contraseña"
+          type={showPassword ? 'text' : 'password'}
+          isRequired
+          placeholder="Mínimo 6 caracteres"
+          leftIcon={<Lock className="w-4 h-4" />}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-            Confirmar contraseña
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <Lock className="w-4 h-4" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                setValidationError(null);
-              }}
-              placeholder="••••••••"
-              disabled={isLoading}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors disabled:opacity-60"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
+          }
           disabled={isLoading}
-          className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl text-sm shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+          error={errors.password?.message}
+          {...register('password')}
+        />
+
+        <DSInput
+          label="Confirmar contraseña"
+          type={showPassword ? 'text' : 'password'}
+          isRequired
+          placeholder="Repite tu contraseña"
+          leftIcon={<Lock className="w-4 h-4" />}
+          disabled={isLoading}
+          error={errors.confirmPassword?.message}
+          {...register('confirmPassword')}
+        />
+
+        <DSButton
+          type="submit"
+          fullWidth
+          size="md"
+          isLoading={isLoading}
+          rightIcon={<ArrowRight className="w-4 h-4" />}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Registrando cuenta...</span>
-            </>
-          ) : (
-            <>
-              <span>Completar Registro</span>
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </button>
+          {isLoading ? 'Registrando cuenta...' : 'Completar Registro'}
+        </DSButton>
       </form>
 
       <div className="mt-6 pt-6 border-t border-slate-100 text-center">

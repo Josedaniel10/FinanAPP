@@ -138,10 +138,10 @@ Rediseño integral de FinanAPP aplicando **Clean Architecture basada en módulos
 - *Punto de Control*: Verificación del flujo de sesión con Zustand y cacheo en TanStack Query sin errores de renderizado. (COMPLETADO)
 
 #### FASE 4: Design System Centralizado y Desacoplado
-- [ ] **Subtarea 4.1**: Crear `src/design-system/tokens.ts` con la definición central de temas, colores semánticos, tipografías y espaciados fácilmente modificables.
-- [ ] **Subtarea 4.2**: Implementar componentes base desacoplados (`DSButton`, `DSInput`, `DSSelect`, `DSCard`, `DSModal`, `DSTable`, `DSBadge`, `DSAlert`).
-- [ ] **Subtarea 4.3**: Migrar los formularios de Login y Registro a `React Hook Form` con validaciones Zod y componentes del Design System.
-- *Punto de Control*: Pruebas visuales del Design System y validación de formularios con mensajes accesibles.
+- [x] **Subtarea 4.1**: Crear `src/design-system/tokens.ts` con la definición central de temas, colores semánticos, tipografías y espaciados fácilmente modificables.
+- [x] **Subtarea 4.2**: Implementar componentes base desacoplados (`DSButton`, `DSInput`, `DSSelect`, `DSCard`, `DSModal`, `DSTable`, `DSBadge`, `DSAlert`).
+- [x] **Subtarea 4.3**: Migrar los formularios de Login y Registro a `React Hook Form` con validaciones Zod y componentes del Design System.
+- *Punto de Control*: Pruebas visuales del Design System y validación de formularios con mensajes accesibles. (COMPLETADO)
 
 #### FASE 5: Nuevas Funcionalidades y Perfeccionamiento de Vistas
 - [ ] **Subtarea 5.1**: Implementar la vista del Panel de Administración (`AdminUsersView`) accesible únicamente para usuarios con rol `ADMIN`.
