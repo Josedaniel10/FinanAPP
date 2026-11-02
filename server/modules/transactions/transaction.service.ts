@@ -19,19 +19,26 @@ export interface PopulatedTransaction extends Transaction {
     type: string;
     currency: string;
   };
+  destinationAccount?: {
+    id: string;
+    name: string;
+    type: string;
+    currency: string;
+  };
 }
 
 export interface FinancialSummary {
   currentBalance: number;
   totalIncome: number;
   totalExpenses: number;
+  totalTransfers: number;
   transactionsCount: number;
   categoryBreakdown: {
     categoryId: string;
     categoryName: string;
     categoryColor: string;
     categoryIcon: string;
-    type: 'INCOME' | 'EXPENSE';
+    type: 'INCOME' | 'EXPENSE' | 'TRANSFER';
     total: number;
     count: number;
     percentage: number;
@@ -54,7 +61,6 @@ export class TransactionService {
       return acc;
     }
 
-    // Default account fallback
     let defaultAcc = await this.accRepo.findDefaultByUserId(userId);
     if (!defaultAcc) {
       const userAccounts = await this.accRepo.findByUserId(userId);
@@ -62,7 +68,6 @@ export class TransactionService {
     }
 
     if (!defaultAcc) {
-      // Auto-create default account if none exists
       defaultAcc = await this.accRepo.create({
         userId,
         name: 'Cuenta Principal',
@@ -77,7 +82,11 @@ export class TransactionService {
   }
 
   async create(userId: string, dto: CreateTransactionDto): Promise<PopulatedTransaction> {
-    const account = await this.resolveAccount(userId, dto.accountId);
+    const originAccount = await this.resolveAccount(userId, dto.accountId);
+
+    if (dto.amount <= 0) {
+      throw new AppError(400, 'El monto del movimiento debe ser mayor que 0.');
+    }
 
     // Verify category exists
     const category = await this.catRepo.findById(dto.categoryId);
@@ -85,24 +94,36 @@ export class TransactionService {
       throw new AppError(404, 'La categoría seleccionada no existe.');
     }
 
-    // Amount validation
-    if (dto.amount <= 0) {
-      throw new AppError(400, 'El monto del movimiento debe ser mayor que 0.');
+    let destinationAccount: any = null;
+
+    if (dto.type === 'TRANSFER') {
+      if (!dto.destinationAccountId) {
+        throw new AppError(400, 'Debe especificar una cuenta de destino para la transferencia.');
+      }
+      if (dto.destinationAccountId === originAccount.id) {
+        throw new AppError(400, 'La cuenta de destino no puede ser igual a la cuenta de origen.');
+      }
+
+      destinationAccount = await this.accRepo.findById(dto.destinationAccountId);
+      if (!destinationAccount || destinationAccount.userId !== userId) {
+        throw new AppError(404, 'La cuenta de destino seleccionada no existe o no te pertenece.');
+      }
+
+      const destAmount = dto.destinationAmount ?? dto.amount;
+
+      // 1. Deduct from origin account
+      await this.accRepo.updateBalance(originAccount.id, -dto.amount);
+      // 2. Add to destination account
+      destinationAccount = await this.accRepo.updateBalance(destinationAccount.id, destAmount);
+    } else {
+      // INCOME or EXPENSE
+      const delta = dto.type === 'INCOME' ? dto.amount : -dto.amount;
+      await this.accRepo.updateBalance(originAccount.id, delta);
     }
 
-    // Calculate balance delta: Income increases balance (+), Expense decreases balance (-)
-    const delta = dto.type === 'INCOME' ? dto.amount : -dto.amount;
-
-    // Update account balance
-    const updatedAccount = await this.accRepo.updateBalance(account.id, delta);
-    if (!updatedAccount) {
-      throw new AppError(500, 'No se pudo actualizar el balance de la cuenta.');
-    }
-
-    // Persist transaction
     const tx = await this.txRepo.create({
       userId,
-      accountId: account.id,
+      accountId: originAccount.id,
       categoryId: category.id,
       amount: dto.amount,
       type: dto.type,
@@ -111,7 +132,11 @@ export class TransactionService {
       recurrence: dto.recurrence,
       paymentMethod: dto.paymentMethod,
       notes: dto.notes,
+      destinationAccountId: dto.destinationAccountId,
+      destinationAmount: dto.destinationAmount,
     });
+
+    const refreshedOrigin = await this.accRepo.findById(originAccount.id);
 
     return {
       ...tx,
@@ -122,12 +147,22 @@ export class TransactionService {
         color: category.color,
         type: category.type,
       },
-      account: {
-        id: updatedAccount.id,
-        name: updatedAccount.name,
-        type: updatedAccount.type,
-        currency: updatedAccount.currency,
-      },
+      account: refreshedOrigin
+        ? {
+            id: refreshedOrigin.id,
+            name: refreshedOrigin.name,
+            type: refreshedOrigin.type,
+            currency: refreshedOrigin.currency,
+          }
+        : undefined,
+      destinationAccount: destinationAccount
+        ? {
+            id: destinationAccount.id,
+            name: destinationAccount.name,
+            type: destinationAccount.type,
+            currency: destinationAccount.currency,
+          }
+        : undefined,
     };
   }
 
@@ -137,7 +172,6 @@ export class TransactionService {
   ): Promise<PopulatedTransaction[]> {
     let txs = await this.txRepo.findByUserId(userId);
 
-    // Apply filters if provided
     if (filters) {
       if (filters.type) {
         txs = txs.filter((t) => t.type === filters.type);
@@ -146,7 +180,7 @@ export class TransactionService {
         txs = txs.filter((t) => t.categoryId === filters.categoryId);
       }
       if (filters.accountId) {
-        txs = txs.filter((t) => t.accountId === filters.accountId);
+        txs = txs.filter((t) => t.accountId === filters.accountId || t.destinationAccountId === filters.accountId);
       }
       if (filters.startDate) {
         txs = txs.filter((t) => t.date >= filters.startDate!);
@@ -164,7 +198,6 @@ export class TransactionService {
       }
     }
 
-    // Sort chronologically (most recent first)
     txs.sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 
     const categories = await this.catRepo.findAllForUser(userId);
@@ -176,6 +209,8 @@ export class TransactionService {
     return txs.map((t) => {
       const cat = catMap.get(t.categoryId);
       const acc = accMap.get(t.accountId);
+      const destAcc = t.destinationAccountId ? accMap.get(t.destinationAccountId) : undefined;
+
       return {
         ...t,
         category: cat
@@ -195,6 +230,14 @@ export class TransactionService {
               currency: acc.currency,
             }
           : undefined,
+        destinationAccount: destAcc
+          ? {
+              id: destAcc.id,
+              name: destAcc.name,
+              type: destAcc.type,
+              currency: destAcc.currency,
+            }
+          : undefined,
       };
     });
   }
@@ -207,6 +250,7 @@ export class TransactionService {
 
     const cat = await this.catRepo.findById(tx.categoryId);
     const acc = await this.accRepo.findById(tx.accountId);
+    const destAcc = tx.destinationAccountId ? await this.accRepo.findById(tx.destinationAccountId) : undefined;
 
     return {
       ...tx,
@@ -227,6 +271,14 @@ export class TransactionService {
             currency: acc.currency,
           }
         : undefined,
+      destinationAccount: destAcc
+        ? {
+            id: destAcc.id,
+            name: destAcc.name,
+            type: destAcc.type,
+            currency: destAcc.currency,
+          }
+        : undefined,
     };
   }
 
@@ -243,68 +295,44 @@ export class TransactionService {
     const newAmount = dto.amount !== undefined ? dto.amount : existing.amount;
     const newType = dto.type !== undefined ? dto.type : existing.type;
     const targetAccountId = dto.accountId !== undefined ? dto.accountId : existing.accountId;
+    const targetDestAccountId = dto.destinationAccountId !== undefined ? dto.destinationAccountId : existing.destinationAccountId;
+    const targetDestAmount = dto.destinationAmount !== undefined ? dto.destinationAmount : existing.destinationAmount;
 
-    if (newAmount <= 0) {
-      throw new AppError(400, 'El monto del movimiento debe ser mayor que 0.');
-    }
-
-    // Check target account exists and belongs to user
-    const targetAccount = await this.accRepo.findById(targetAccountId);
-    if (!targetAccount || targetAccount.userId !== userId) {
-      throw new AppError(404, 'La cuenta seleccionada no existe o no te pertenece.');
-    }
-
-    // Verify category if changed
-    if (dto.categoryId) {
-      const cat = await this.catRepo.findById(dto.categoryId);
-      if (!cat) {
-        throw new AppError(404, 'La categoría seleccionada no existe.');
+    // 1. Revert existing impact
+    if (existing.type === 'TRANSFER') {
+      await this.accRepo.updateBalance(existing.accountId, existing.amount);
+      if (existing.destinationAccountId) {
+        const destAmt = existing.destinationAmount ?? existing.amount;
+        await this.accRepo.updateBalance(existing.destinationAccountId, -destAmt);
       }
+    } else {
+      const revertDelta = existing.type === 'INCOME' ? -existing.amount : +existing.amount;
+      await this.accRepo.updateBalance(existing.accountId, revertDelta);
     }
 
-    // Recalculate balance consistently:
-    // 1. Revert previous transaction impact on old account
-    const oldDelta = existing.type === 'INCOME' ? -existing.amount : +existing.amount;
-    await this.accRepo.updateBalance(existing.accountId, oldDelta);
+    // 2. Apply new impact
+    if (newType === 'TRANSFER') {
+      if (!targetDestAccountId || targetDestAccountId === targetAccountId) {
+        throw new AppError(400, 'Cuenta de destino inválida para la transferencia.');
+      }
+      await this.accRepo.updateBalance(targetAccountId, -newAmount);
+      await this.accRepo.updateBalance(targetDestAccountId, targetDestAmount ?? newAmount);
+    } else {
+      const applyDelta = newType === 'INCOME' ? +newAmount : -newAmount;
+      await this.accRepo.updateBalance(targetAccountId, applyDelta);
+    }
 
-    // 2. Apply new transaction impact on target account
-    const newDelta = newType === 'INCOME' ? +newAmount : -newAmount;
-    const updatedTargetAccount = await this.accRepo.updateBalance(targetAccountId, newDelta);
-
-    // 3. Update transaction record
+    // 3. Persist update
     const updated = await this.txRepo.update(id, {
       ...dto,
       amount: newAmount,
       type: newType,
       accountId: targetAccountId,
+      destinationAccountId: targetDestAccountId,
+      destinationAmount: targetDestAmount,
     });
 
-    if (!updated) {
-      throw new AppError(500, 'Error al actualizar el movimiento.');
-    }
-
-    const cat = await this.catRepo.findById(updated.categoryId);
-
-    return {
-      ...updated,
-      category: cat
-        ? {
-            id: cat.id,
-            name: cat.name,
-            icon: cat.icon,
-            color: cat.color,
-            type: cat.type,
-          }
-        : undefined,
-      account: updatedTargetAccount
-        ? {
-            id: updatedTargetAccount.id,
-            name: updatedTargetAccount.name,
-            type: updatedTargetAccount.type,
-            currency: updatedTargetAccount.currency,
-          }
-        : undefined,
-    };
+    return this.findById(id, userId);
   }
 
   async delete(id: string, userId: string): Promise<void> {
@@ -313,11 +341,18 @@ export class TransactionService {
       throw new AppError(404, 'Movimiento no encontrado.');
     }
 
-    // Revert balance impact on account:
-    // If it was INCOME: subtracting it (-amount)
-    // If it was EXPENSE: refunding it (+amount)
-    const revertDelta = existing.type === 'INCOME' ? -existing.amount : +existing.amount;
-    await this.accRepo.updateBalance(existing.accountId, revertDelta);
+    if (existing.type === 'TRANSFER') {
+      // Revert origin: add back deducted amount
+      await this.accRepo.updateBalance(existing.accountId, existing.amount);
+      // Revert destination: deduct received amount
+      if (existing.destinationAccountId) {
+        const destAmount = existing.destinationAmount ?? existing.amount;
+        await this.accRepo.updateBalance(existing.destinationAccountId, -destAmount);
+      }
+    } else {
+      const revertDelta = existing.type === 'INCOME' ? -existing.amount : +existing.amount;
+      await this.accRepo.updateBalance(existing.accountId, revertDelta);
+    }
 
     await this.txRepo.delete(id);
   }
@@ -331,16 +366,19 @@ export class TransactionService {
 
     let totalIncome = 0;
     let totalExpenses = 0;
+    let totalTransfers = 0;
     const categoryTotals = new Map<
       string,
-      { categoryId: string; total: number; count: number; type: 'INCOME' | 'EXPENSE' }
+      { categoryId: string; total: number; count: number; type: 'INCOME' | 'EXPENSE' | 'TRANSFER' }
     >();
 
     for (const t of txs) {
       if (t.type === 'INCOME') {
         totalIncome += t.amount;
-      } else {
+      } else if (t.type === 'EXPENSE') {
         totalExpenses += t.amount;
+      } else if (t.type === 'TRANSFER') {
+        totalTransfers += t.amount;
       }
 
       const mapKey = `${t.categoryId}_${t.type}`;
@@ -380,6 +418,7 @@ export class TransactionService {
       currentBalance: Math.round(currentBalance * 100) / 100,
       totalIncome: Math.round(totalIncome * 100) / 100,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
+      totalTransfers: Math.round(totalTransfers * 100) / 100,
       transactionsCount: txs.length,
       categoryBreakdown: categoryBreakdown.sort((a, b) => b.total - a.total),
     };

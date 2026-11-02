@@ -1,7 +1,7 @@
 import { Schema, model, Document, Model } from 'mongoose';
 import { randomUUID } from 'crypto';
 
-export type TransactionType = 'INCOME' | 'EXPENSE';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
 export type RecurrenceType = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
@@ -24,6 +24,8 @@ export interface Transaction {
   recurrence?: RecurrenceType;
   paymentMethod?: PaymentMethodType;
   notes?: string;
+  destinationAccountId?: string;
+  destinationAmount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,7 +64,7 @@ const transactionSchema = new Schema<TransactionDocument>(
     },
     type: {
       type: String,
-      enum: ['INCOME', 'EXPENSE'],
+      enum: ['INCOME', 'EXPENSE', 'TRANSFER'],
       required: true,
       index: true,
     },
@@ -89,6 +91,15 @@ const transactionSchema = new Schema<TransactionDocument>(
     notes: {
       type: String,
       trim: true,
+      default: undefined,
+    },
+    destinationAccountId: {
+      type: String,
+      default: undefined,
+      index: true,
+    },
+    destinationAmount: {
+      type: Number,
       default: undefined,
     },
   },

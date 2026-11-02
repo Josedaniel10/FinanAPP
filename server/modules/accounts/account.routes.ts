@@ -1,18 +1,14 @@
-import { Router, Response, NextFunction } from 'express';
-import { accountRepository } from './account.repository';
-import { authenticateToken, AuthenticatedRequest } from '../../middlewares/auth.middleware';
+import { Router } from 'express';
+import { accountController } from './account.controller';
+import { authenticateToken } from '../../middlewares/auth.middleware';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const accounts = await accountRepository.findByUserId(req.user!.id);
-    res.json({ data: accounts });
-  } catch (error) {
-    next(error);
-  }
-});
+router.get('/', (req, res, next) => accountController.getAccounts(req, res).catch(next));
+router.post('/', (req, res, next) => accountController.createAccount(req, res).catch(next));
+router.put('/:id', (req, res, next) => accountController.updateAccount(req, res).catch(next));
+router.delete('/:id', (req, res, next) => accountController.deleteAccount(req, res).catch(next));
 
 export default router;

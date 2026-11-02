@@ -123,12 +123,12 @@ Rediseño integral de FinanAPP aplicando **Clean Architecture basada en módulos
 - *Punto de Control*: Verificación de conexión a Atlas y validación del login del usuario administrador. (COMPLETADO)
 
 #### FASE 2: Reestructuración del Backend a Clean Architecture Modular
-- [ ] **Subtarea 2.1**: Definir la estructura de capas (`domain`, `application`, `infrastructure`, `presentation`) para el módulo de Autenticación y Usuarios (`server/modules/auth`), introduciendo el campo `role: 'ADMIN' | 'USER'`.
-- [ ] **Subtarea 2.2**: Refactorizar a Clean Architecture los módulos de Cuentas (`accounts`) y Categorías (`categories`).
-- [ ] **Subtarea 2.3**: Refactorizar a Clean Architecture el módulo de Transacciones (`transactions`) incorporando soporte para tipo `TRANSFER` entre cuentas con transacción atómica de saldo.
-- [ ] **Subtarea 2.4**: Refactorizar a Clean Architecture el módulo de Presupuestos (`budgets`) y crear el nuevo módulo de Metas de Ahorro (`savings`).
-- [ ] **Subtarea 2.5**: Crear el módulo de Administración (`server/modules/admin`) con endpoints protegidos por middleware `requireAdmin` (listar usuarios, bloquear/desbloquear, cambiar roles).
-- *Punto de Control*: Verificación de rutas de la API, middleware de roles y transacciones atómicas de cuentas.
+- [x] **Subtarea 2.1**: Definir la estructura de capas (`domain`, `application`, `infrastructure`, `presentation`) para el módulo de Autenticación y Usuarios (`server/modules/auth`), introduciendo el campo `role: 'ADMIN' | 'USER'`.
+- [x] **Subtarea 2.2**: Refactorizar a Clean Architecture los módulos de Cuentas (`accounts`) y Categorías (`categories`).
+- [x] **Subtarea 2.3**: Refactorizar a Clean Architecture el módulo de Transacciones (`transactions`) incorporando soporte para tipo `TRANSFER` entre cuentas con transacción atómica de saldo.
+- [x] **Subtarea 2.4**: Refactorizar a Clean Architecture el módulo de Presupuestos (`budgets`) y crear el nuevo módulo de Metas de Ahorro (`savings`).
+- [x] **Subtarea 2.5**: Crear el módulo de Administración (`server/modules/admin`) con endpoints protegidos por middleware `requireAdmin` (listar usuarios, bloquear/desbloquear, cambiar roles).
+- *Punto de Control*: Verificación de rutas de la API, middleware de roles y transacciones atómicas de cuentas. (COMPLETADO)
 
 #### FASE 3: Modernización del Frontend (TanStack Query, Zustand, React Hook Form, Axios)
 - [ ] **Subtarea 3.1**: Instalar y configurar las dependencias clave en frontend: `@tanstack/react-query`, `zustand`, `react-hook-form`, `@hookform/resolvers`, `zod`, `axios`.

@@ -35,7 +35,7 @@ export class AccountRepository {
   }
 
   async findByUserId(userId: string): Promise<Account[]> {
-    const docs = await AccountModel.find({ userId }).sort({ createdAt: 1 }).lean();
+    const docs = await AccountModel.find({ userId }).sort({ isDefault: -1, createdAt: 1 }).lean();
     return docs.map(mapDocToAccount);
   }
 
@@ -49,8 +49,27 @@ export class AccountRepository {
     return doc ? mapDocToAccount(doc) : null;
   }
 
+  async update(id: string, updates: Partial<Account>): Promise<Account | null> {
+    const docUpdates: Record<string, any> = { ...updates, updatedAt: new Date() };
+    delete docUpdates.id;
+    delete docUpdates._id;
+    if (typeof docUpdates.balance === 'number') {
+      docUpdates.balance = Math.round(docUpdates.balance * 100) / 100;
+    }
+    const updated = await AccountModel.findByIdAndUpdate(id, docUpdates, { new: true }).lean();
+    return updated ? mapDocToAccount(updated) : null;
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const res = await AccountModel.findByIdAndDelete(id);
+    return Boolean(res);
+  }
+
+  async clearDefault(userId: string): Promise<void> {
+    await AccountModel.updateMany({ userId }, { $set: { isDefault: false } });
+  }
+
   async updateBalance(id: string, deltaAmount: number): Promise<Account | null> {
-    // Atomic increment in MongoDB to prevent concurrency race conditions
     const updated = await AccountModel.findByIdAndUpdate(
       id,
       {
@@ -62,7 +81,6 @@ export class AccountRepository {
 
     if (!updated) return null;
 
-    // Ensure 2 decimal rounding precision
     const roundedBalance = Math.round(updated.balance * 100) / 100;
     if (roundedBalance !== updated.balance) {
       await AccountModel.findByIdAndUpdate(id, { $set: { balance: roundedBalance } });

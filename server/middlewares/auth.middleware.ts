@@ -52,3 +52,18 @@ export const authenticateToken = async (
     next(error);
   }
 };
+
+export const requireAdmin = (
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    throw new AppError(401, 'No autenticado. Inicie sesión para continuar.');
+  }
+  if (req.user.role !== 'ADMIN') {
+    throw new AppError(403, 'Acceso denegado. Se requieren privilegios de Administrador.');
+  }
+  next();
+};
+

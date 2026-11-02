@@ -17,6 +17,8 @@ function mapDocToTransaction(doc: any): Transaction {
     recurrence: doc.recurrence,
     paymentMethod: doc.paymentMethod,
     notes: doc.notes,
+    destinationAccountId: doc.destinationAccountId,
+    destinationAmount: doc.destinationAmount,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
   };
@@ -46,6 +48,8 @@ export class TransactionRepository {
     recurrence?: Transaction['recurrence'];
     paymentMethod?: Transaction['paymentMethod'];
     notes?: string;
+    destinationAccountId?: string;
+    destinationAmount?: number;
   }): Promise<Transaction> {
     const created = await TransactionModel.create({
       userId: txData.userId,
@@ -58,6 +62,10 @@ export class TransactionRepository {
       recurrence: txData.recurrence || 'NONE',
       paymentMethod: txData.paymentMethod,
       notes: txData.notes?.trim() || undefined,
+      destinationAccountId: txData.destinationAccountId,
+      destinationAmount: txData.destinationAmount
+        ? Math.round(txData.destinationAmount * 100) / 100
+        : undefined,
     });
     return mapDocToTransaction(created.toObject());
   }
@@ -72,6 +80,9 @@ export class TransactionRepository {
 
     if (typeof docUpdates.amount === 'number') {
       docUpdates.amount = Math.round(docUpdates.amount * 100) / 100;
+    }
+    if (typeof docUpdates.destinationAmount === 'number') {
+      docUpdates.destinationAmount = Math.round(docUpdates.destinationAmount * 100) / 100;
     }
 
     const updated = await TransactionModel.findByIdAndUpdate(id, docUpdates, {

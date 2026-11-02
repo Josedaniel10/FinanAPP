@@ -10,8 +10,8 @@ import { AuthSessionResponse, UserWithoutPassword } from './auth.types';
 export class AuthService {
   constructor(private readonly repository: AuthRepository = authRepository) {}
 
-  private generateToken(userId: string, email: string): string {
-    return jwt.sign({ userId, email }, env.JWT_SECRET, {
+  private generateToken(userId: string, email: string, role: string): string {
+    return jwt.sign({ userId, email, role }, env.JWT_SECRET, {
       expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
     });
   }
@@ -32,6 +32,7 @@ export class AuthService {
       name: dto.name,
       email: dto.email,
       passwordHash,
+      role: 'USER',
     });
 
     // Auto-create default account for the new user
@@ -44,7 +45,7 @@ export class AuthService {
       isDefault: true,
     });
 
-    const token = this.generateToken(user.id, user.email);
+    const token = this.generateToken(user.id, user.email, user.role);
 
     // Safe user without password
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -121,7 +122,7 @@ export class AuthService {
     // Login successful: reset attempts and lock
     await this.repository.resetFailedAttempts(user.id);
 
-    const token = this.generateToken(user.id, user.email);
+    const token = this.generateToken(user.id, user.email, user.role);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...safeUser } = user;
