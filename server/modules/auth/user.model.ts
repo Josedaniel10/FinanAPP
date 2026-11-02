@@ -1,6 +1,6 @@
 import { Schema, model, Document, Model } from 'mongoose';
 import { randomUUID } from 'crypto';
-import { User } from './auth.types';
+import { User, UserRole } from './auth.types';
 
 export interface UserDocument extends Omit<User, 'id'>, Document<string> {
   _id: string;
@@ -28,6 +28,11 @@ const userSchema = new Schema<UserDocument>(
     passwordHash: {
       type: String,
       required: true,
+    },
+    role: {
+      type: String,
+      enum: ['ADMIN', 'USER'],
+      default: 'USER',
     },
     failedLoginAttempts: {
       type: Number,

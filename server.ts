@@ -4,14 +4,14 @@ import path from 'path';
 import fs from 'fs';
 import { env } from './server/config/env';
 import { connectMongoDB, disconnectMongoDB } from './server/db/mongodb';
-import { runMongoMigrationAndSeeds } from './server/db/migration';
+import { runDatabaseSeed } from './server/db/seed-database';
 import apiRouter from './server/routes/api.routes';
 import { errorHandler } from './server/middlewares/error.middleware';
 
 async function bootstrap() {
-  // 1. Initialize MongoDB connection and migration/seeds
+  // 1. Initialize MongoDB Atlas connection and system seed
   await connectMongoDB();
-  await runMongoMigrationAndSeeds();
+  await runDatabaseSeed();
 
   const app = express();
 

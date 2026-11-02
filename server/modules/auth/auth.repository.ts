@@ -1,5 +1,5 @@
 import { UserModel } from './user.model';
-import { User } from './auth.types';
+import { User, UserRole } from './auth.types';
 
 function mapDocToUser(doc: any): User {
   return {
@@ -7,6 +7,7 @@ function mapDocToUser(doc: any): User {
     name: doc.name,
     email: doc.email,
     passwordHash: doc.passwordHash,
+    role: (doc.role as UserRole) || 'USER',
     failedLoginAttempts: doc.failedLoginAttempts ?? 0,
     lockUntil: doc.lockUntil ?? null,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
@@ -15,6 +16,11 @@ function mapDocToUser(doc: any): User {
 }
 
 export class AuthRepository {
+  async findAll(): Promise<User[]> {
+    const docs = await UserModel.find().sort({ createdAt: -1 }).lean();
+    return docs.map(mapDocToUser);
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const doc = await UserModel.findOne({
       email: email.trim().toLowerCase(),
@@ -31,11 +37,13 @@ export class AuthRepository {
     name: string;
     email: string;
     passwordHash: string;
+    role?: UserRole;
   }): Promise<User> {
     const created = await UserModel.create({
       name: userData.name.trim(),
       email: userData.email.trim().toLowerCase(),
       passwordHash: userData.passwordHash,
+      role: userData.role || 'USER',
       failedLoginAttempts: 0,
       lockUntil: null,
     });

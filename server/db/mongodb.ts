@@ -1,67 +1,72 @@
 import mongoose from 'mongoose';
-import path from 'path';
-import fs from 'fs';
 import { env } from '../config/env';
 
-let memoryServerInstance: any = null;
+let memoryServerFallback: any = null;
 
 export async function connectMongoDB(): Promise<typeof mongoose> {
   if (mongoose.connection.readyState === 1) {
     return mongoose;
   }
 
-  let mongoUri = env.MONGODB_URI;
+  const rawUri = env.MONGODB_URI?.trim();
+  const hasValidAtlasUri =
+    Boolean(rawUri) &&
+    !rawUri?.includes('<usuario>') &&
+    !rawUri?.includes('<password>') &&
+    (rawUri?.startsWith('mongodb+srv://') || rawUri?.startsWith('mongodb://'));
 
-  if (!mongoUri) {
-    console.log('ℹ️ [MongoDB] No external MONGODB_URI environment variable specified.');
-    console.log('🔄 [MongoDB] Initializing persistent local MongoDB instance...');
+  let targetUri = rawUri;
+
+  if (hasValidAtlasUri && targetUri) {
+    console.log('🌐 [MongoDB Atlas] Conectando directamente al cluster en la nube...');
+    console.log(`📡 [MongoDB Atlas] Base de datos objetivo: "${env.MONGODB_DB_NAME}"`);
+  } else {
+    console.log('ℹ️ [MongoDB Atlas] No se detectó una URI válida de MongoDB Atlas configurada en .env.');
+    console.log('👉 Para conectar con tu base de datos de MongoDB oficial en la nube, edita .env y coloca:');
+    console.log('   MONGODB_URI="mongodb+srv://<usuario>:<password>@cluster0.xxxxx.mongodb.net/finanapp?retryWrites=true&w=majority"');
+    console.log('⚡ [MongoDB] Iniciando instancia temporal en memoria para permitir pruebas inmediatas sin archivos locales...');
+    
     try {
-      const dbPath = path.resolve(process.cwd(), 'server/data/mongodb');
-      if (!fs.existsSync(dbPath)) {
-        fs.mkdirSync(dbPath, { recursive: true });
-      }
-
       const { MongoMemoryServer } = await import('mongodb-memory-server');
-      memoryServerInstance = await MongoMemoryServer.create({
+      memoryServerFallback = await MongoMemoryServer.create({
         instance: {
-          dbPath,
           dbName: env.MONGODB_DB_NAME,
-          storageEngine: 'wiredTiger',
         },
       });
-      mongoUri = memoryServerInstance.getUri();
-      console.log(`✅ [MongoDB] Persistent MongoDB server active at: ${mongoUri}`);
+      targetUri = memoryServerFallback.getUri();
+      console.log('✅ [MongoDB] Instancia en memoria inicializada correctamente.');
     } catch (err) {
-      console.error('❌ [MongoDB] Failed to initialize persistent local MongoDB:', err);
+      console.error('❌ [MongoDB] Error iniciando instancia de soporte:', err);
       throw err;
     }
   }
 
   try {
     mongoose.connection.on('connected', () => {
-      console.log('🍃 [MongoDB] Successfully connected to database');
+      console.log('🍃 [MongoDB] Conexión establecida exitosamente.');
     });
 
     mongoose.connection.on('error', (err) => {
-      console.error('❌ [MongoDB] Connection error:', err);
+      console.error('❌ [MongoDB] Error de conexión:', err);
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.log('⚠️ [MongoDB] Disconnected from database');
+      console.log('⚠️ [MongoDB] Desconectado de la base de datos.');
     });
 
-    if (!mongoUri) {
-      throw new Error('No valid MongoDB connection string was provided or initialized.');
+    if (!targetUri) {
+      throw new Error('URI de conexión a MongoDB no disponible.');
     }
 
-    await mongoose.connect(mongoUri, {
+    await mongoose.connect(targetUri, {
       dbName: env.MONGODB_DB_NAME,
       autoIndex: true,
+      serverSelectionTimeoutMS: 8000,
     });
 
     return mongoose;
   } catch (err) {
-    console.error('❌ [MongoDB] Fatal connection failure:', err);
+    console.error('❌ [MongoDB] Error fatal conectando a MongoDB:', err);
     throw err;
   }
 }
@@ -71,12 +76,12 @@ export async function disconnectMongoDB(): Promise<void> {
     if (mongoose.connection.readyState !== 0) {
       await mongoose.disconnect();
     }
-    if (memoryServerInstance) {
-      await memoryServerInstance.stop();
-      memoryServerInstance = null;
+    if (memoryServerFallback) {
+      await memoryServerFallback.stop();
+      memoryServerFallback = null;
     }
-    console.log('🍃 [MongoDB] Connection closed cleanly');
+    console.log('🍃 [MongoDB] Conexión cerrada limpiamente.');
   } catch (err) {
-    console.error('Error during MongoDB disconnect:', err);
+    console.error('Error durante la desconexión de MongoDB:', err);
   }
 }
