@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { useAuth } from './features/auth/hooks/useAuth';
+import { useAuthStore } from './stores/authStore';
 import { LoginForm } from './features/auth/components/LoginForm';
 import { RegisterForm } from './features/auth/components/RegisterForm';
 import { Navbar, ActiveTabType } from './shared/components/Navbar';
@@ -14,6 +15,10 @@ const MainAppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [currentTab, setCurrentTab] = useState<ActiveTabType>('dashboard');
+
+  useEffect(() => {
+    useAuthStore.getState().initialize();
+  }, []);
 
   if (isLoading) {
     return (

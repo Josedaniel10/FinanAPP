@@ -1,4 +1,4 @@
-export type TransactionType = 'INCOME' | 'EXPENSE';
+export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 
 export type RecurrenceType = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
@@ -38,10 +38,13 @@ export interface Transaction {
   recurrence?: RecurrenceType;
   paymentMethod?: PaymentMethodType;
   notes?: string;
+  destinationAccountId?: string;
+  destinationAmount?: number;
   createdAt: string;
   updatedAt: string;
   category?: Category;
   account?: Account;
+  destinationAccount?: Account;
 }
 
 export interface CreateTransactionPayload {
@@ -49,6 +52,8 @@ export interface CreateTransactionPayload {
   type: TransactionType;
   categoryId: string;
   accountId?: string;
+  destinationAccountId?: string;
+  destinationAmount?: number;
   date: string;
   description: string;
   recurrence?: RecurrenceType;
@@ -67,6 +72,10 @@ export interface TransactionFilterParams {
   search?: string;
 }
 
+export type TransactionFilterDto = TransactionFilterParams;
+export type CreateTransactionDto = CreateTransactionPayload;
+export type UpdateTransactionDto = UpdateTransactionPayload;
+
 export interface CategoryBreakdownItem {
   categoryId: string;
   categoryName: string;
@@ -82,6 +91,7 @@ export interface FinancialSummary {
   currentBalance: number;
   totalIncome: number;
   totalExpenses: number;
+  totalTransfers?: number;
   transactionsCount: number;
   categoryBreakdown: CategoryBreakdownItem[];
 }

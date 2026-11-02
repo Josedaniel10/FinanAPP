@@ -1,7 +1,10 @@
+export type UserRole = 'ADMIN' | 'USER';
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
   failedLoginAttempts: number;
   lockUntil: number | null;
   createdAt: string;

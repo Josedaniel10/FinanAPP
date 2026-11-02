@@ -1,3 +1,5 @@
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+
 const API_BASE_URL = '/api/v1';
 
 export class ApiError extends Error {
@@ -12,68 +14,74 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
-  data?: unknown;
-  params?: Record<string, string | number | boolean | undefined | null>;
-}
+export const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 15000,
+});
 
+// Request Interceptor: Attach JWT Bearer Token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('finanapp_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response Interceptor: Standardize API responses & errors
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ error?: string; message?: string; details?: unknown }>) => {
+    if (error.response) {
+      const { status, data } = error.response;
+      const message =
+        data?.error || data?.message || `Error del servidor (${status})`;
+
+      // If token expired or unauthorized on protected route, clean token
+      if (status === 401 && !error.config?.url?.includes('/auth/login')) {
+        localStorage.removeItem('finanapp_token');
+        localStorage.removeItem('finanapp_user');
+      }
+
+      return Promise.reject(new ApiError(message, status, data?.details));
+    }
+
+    if (error.request) {
+      return Promise.reject(
+        new ApiError('No se pudo establecer conexión con el servidor. Verifique su red.', 0)
+      );
+    }
+
+    return Promise.reject(new ApiError(error.message, 500));
+  }
+);
+
+// Seamless wrapper for typed requests compatible with existing features
 export async function apiClient<T>(
   endpoint: string,
-  options: RequestOptions = {}
+  options: {
+    method?: string;
+    data?: unknown;
+    params?: Record<string, any>;
+    headers?: Record<string, string>;
+  } = {}
 ): Promise<T> {
-  const { data, params, headers: customHeaders, ...customOptions } = options;
-
-  const headers = new Headers(customHeaders);
-  if (data) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  // Auto attach JWT token from localStorage if present
-  const token = localStorage.getItem('finanapp_token');
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  let queryString = '';
-  if (params) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        searchParams.append(key, String(value));
-      }
-    });
-    const qs = searchParams.toString();
-    if (qs) {
-      queryString = `?${qs}`;
-    }
-  }
-
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${API_BASE_URL}${cleanEndpoint}${queryString}`;
 
-  const response = await fetch(url, {
-    ...customOptions,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-  });
+  const config: AxiosRequestConfig = {
+    url: cleanEndpoint,
+    method: options.method || (options.data ? 'POST' : 'GET'),
+    data: options.data,
+    params: options.params,
+    headers: options.headers,
+  };
 
-  let responseData: any = null;
-  const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    try {
-      responseData = await response.json();
-    } catch {
-      responseData = null;
-    }
-  }
-
-  if (!response.ok) {
-    const errorMessage =
-      responseData?.error ||
-      responseData?.message ||
-      `Error HTTP ${response.status}: ${response.statusText}`;
-    throw new ApiError(errorMessage, response.status, responseData?.details);
-  }
-
-  return responseData;
+  const response = await axiosInstance.request<T>(config);
+  return response.data;
 }

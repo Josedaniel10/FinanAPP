@@ -406,7 +406,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         onSubmit={handleInlineCreateCategory}
-        defaultType={type}
+        defaultType={type === 'INCOME' ? 'INCOME' : 'EXPENSE'}
       />
     </div>
   );

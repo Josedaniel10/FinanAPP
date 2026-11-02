@@ -131,11 +131,11 @@ Rediseño integral de FinanAPP aplicando **Clean Architecture basada en módulos
 - *Punto de Control*: Verificación de rutas de la API, middleware de roles y transacciones atómicas de cuentas. (COMPLETADO)
 
 #### FASE 3: Modernización del Frontend (TanStack Query, Zustand, React Hook Form, Axios)
-- [ ] **Subtarea 3.1**: Instalar y configurar las dependencias clave en frontend: `@tanstack/react-query`, `zustand`, `react-hook-form`, `@hookform/resolvers`, `zod`, `axios`.
-- [ ] **Subtarea 3.2**: Configurar el cliente central de `Axios` con interceptores de autenticación y manejo homogéneo de errores y reintentos.
-- [ ] **Subtarea 3.3**: Crear el store global con `Zustand` (`src/stores/authStore.ts` y `src/stores/uiStore.ts`) reemplazando los Contextos tradicionales por un estado reactivo y atómico.
-- [ ] **Subtarea 3.4**: Configurar el `QueryClient` de TanStack Query y construir hooks personalizados de datos (`useTransactionsQuery`, `useAccountsQuery`, `useBudgetsQuery`, `useAdminUsersQuery`).
-- *Punto de Control*: Verificación del flujo de sesión con Zustand y cacheo en TanStack Query sin errores de renderizado.
+- [x] **Subtarea 3.1**: Instalar y configurar las dependencias clave en frontend: `@tanstack/react-query`, `zustand`, `react-hook-form`, `@hookform/resolvers`, `zod`, `axios`.
+- [x] **Subtarea 3.2**: Configurar el cliente central de `Axios` con interceptores de autenticación y manejo homogéneo de errores y reintentos.
+- [x] **Subtarea 3.3**: Crear el store global con `Zustand` (`src/stores/authStore.ts` y `src/stores/uiStore.ts`) reemplazando los Contextos tradicionales por un estado reactivo y atómico.
+- [x] **Subtarea 3.4**: Configurar el `QueryClient` de TanStack Query y construir hooks personalizados de datos (`useTransactionsQuery`, `useAccountsQuery`, `useBudgetsQuery`, `useSavingsQuery`, `useAdminUsersQuery`).
+- *Punto de Control*: Verificación del flujo de sesión con Zustand y cacheo en TanStack Query sin errores de renderizado. (COMPLETADO)
 
 #### FASE 4: Design System Centralizado y Desacoplado
 - [ ] **Subtarea 4.1**: Crear `src/design-system/tokens.ts` con la definición central de temas, colores semánticos, tipografías y espaciados fácilmente modificables.
