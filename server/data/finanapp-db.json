@@ -1,0 +1,244 @@
+{
+  "users": [
+    {
+      "id": "user-demo-001",
+      "name": "Usuario Demo",
+      "email": "demo@finanapp.com",
+      "passwordHash": "$2b$10$GKclD6BGgvB2KIsBV9rX8.IzZn/pPmiU4ydoUoMWFSG.bHx7wjpaK",
+      "failedLoginAttempts": 0,
+      "lockUntil": null,
+      "createdAt": "2026-09-22T20:39:37.964Z",
+      "updatedAt": "2026-09-22T20:57:11.635Z"
+    },
+    {
+      "id": "8f9320bd-d2fa-4257-bb9b-7394dada5d42",
+      "name": "Carlos Rodríguez",
+      "email": "carlos@example.com",
+      "passwordHash": "$2b$10$1.VcszzP9d988.IDWXHVZ.NIKBZ7oTo.wt1MVfiM8xvLUw4Y6p1/y",
+      "failedLoginAttempts": 0,
+      "lockUntil": null,
+      "createdAt": "2026-09-22T20:39:46.246Z",
+      "updatedAt": "2026-09-22T20:39:46.246Z"
+    },
+    {
+      "id": "92f3320b-4a81-4b3c-bbfb-c126cf3ad7a8",
+      "name": "Lock Tester",
+      "email": "testlock@example.com",
+      "passwordHash": "$2b$10$VyQJ5uyvVeECXbLHQpWW1O8idFtUG30qQZvVKKfAbshXIllj2o5ue",
+      "failedLoginAttempts": 3,
+      "lockUntil": 1790110491033,
+      "createdAt": "2026-09-22T20:39:50.770Z",
+      "updatedAt": "2026-09-22T20:39:51.152Z"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "acc-demo-001",
+      "userId": "user-demo-001",
+      "name": "Cuenta Principal",
+      "type": "CASH",
+      "balance": 280,
+      "currency": "USD",
+      "isDefault": true,
+      "createdAt": "2026-09-22T20:39:37.964Z",
+      "updatedAt": "2026-09-22T20:57:11.901Z"
+    },
+    {
+      "id": "c7d7c7df-c181-47d6-b19d-afcedb79813e",
+      "userId": "8f9320bd-d2fa-4257-bb9b-7394dada5d42",
+      "name": "Cuenta Principal",
+      "type": "CASH",
+      "balance": 0,
+      "currency": "USD",
+      "isDefault": true,
+      "createdAt": "2026-09-22T20:39:46.247Z",
+      "updatedAt": "2026-09-22T20:39:46.247Z"
+    },
+    {
+      "id": "d9631393-d29e-4841-ae64-6e00f0426b2d",
+      "userId": "92f3320b-4a81-4b3c-bbfb-c126cf3ad7a8",
+      "name": "Cuenta Principal",
+      "type": "CASH",
+      "balance": 0,
+      "currency": "USD",
+      "isDefault": true,
+      "createdAt": "2026-09-22T20:39:50.771Z",
+      "updatedAt": "2026-09-22T20:39:50.771Z"
+    }
+  ],
+  "categories": [
+    {
+      "userId": null,
+      "name": "Alimentación y Bebidas",
+      "type": "EXPENSE",
+      "icon": "Utensils",
+      "color": "#EF4444",
+      "id": "cat-system-1",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Transporte y Combustible",
+      "type": "EXPENSE",
+      "icon": "Car",
+      "color": "#F97316",
+      "id": "cat-system-2",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Vivienda y Servicios",
+      "type": "EXPENSE",
+      "icon": "Home",
+      "color": "#F59E0B",
+      "id": "cat-system-3",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Salud y Farmacia",
+      "type": "EXPENSE",
+      "icon": "HeartPulse",
+      "color": "#10B981",
+      "id": "cat-system-4",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Educación y Cursos",
+      "type": "EXPENSE",
+      "icon": "GraduationCap",
+      "color": "#3B82F6",
+      "id": "cat-system-5",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Entretenimiento y Ocio",
+      "type": "EXPENSE",
+      "icon": "Gamepad2",
+      "color": "#8B5CF6",
+      "id": "cat-system-6",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Ropa y Calzado",
+      "type": "EXPENSE",
+      "icon": "Shirt",
+      "color": "#EC4899",
+      "id": "cat-system-7",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Otros Gastos",
+      "type": "EXPENSE",
+      "icon": "CircleDollarSign",
+      "color": "#6B7280",
+      "id": "cat-system-8",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Salario / Nómina",
+      "type": "INCOME",
+      "icon": "Banknote",
+      "color": "#10B981",
+      "id": "cat-system-9",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Ventas y Negocios",
+      "type": "INCOME",
+      "icon": "Briefcase",
+      "color": "#059669",
+      "id": "cat-system-10",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Inversiones y Rendimientos",
+      "type": "INCOME",
+      "icon": "TrendingUp",
+      "color": "#2563EB",
+      "id": "cat-system-11",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Regalos / Bonos",
+      "type": "INCOME",
+      "icon": "Gift",
+      "color": "#7C3AED",
+      "id": "cat-system-12",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    },
+    {
+      "userId": null,
+      "name": "Otros Ingresos",
+      "type": "INCOME",
+      "icon": "Coins",
+      "color": "#0D9488",
+      "id": "cat-system-13",
+      "createdAt": "2026-09-22T20:39:37.950Z",
+      "updatedAt": "2026-09-22T20:39:37.950Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "62269bc8-1181-440c-9e3a-0749721b76a6",
+      "userId": "user-demo-001",
+      "accountId": "acc-demo-001",
+      "categoryId": "cat-system-12",
+      "amount": 500,
+      "type": "INCOME",
+      "description": "Ingreso de una prestación",
+      "date": "2026-09-22",
+      "recurrence": "NONE",
+      "createdAt": "2026-09-22T20:51:42.727Z",
+      "updatedAt": "2026-09-22T20:51:42.727Z"
+    },
+    {
+      "id": "633fc5c4-dfef-4a12-98e4-6a583086675e",
+      "userId": "user-demo-001",
+      "accountId": "acc-demo-001",
+      "categoryId": "cat-system-5",
+      "amount": 200,
+      "type": "EXPENSE",
+      "description": "Compra",
+      "date": "2026-09-22",
+      "recurrence": "NONE",
+      "paymentMethod": "DEBIT_CARD",
+      "createdAt": "2026-09-22T20:55:03.480Z",
+      "updatedAt": "2026-09-22T20:55:03.480Z"
+    },
+    {
+      "id": "3bedd9a4-959b-494f-8e5f-486adcefd960",
+      "userId": "user-demo-001",
+      "accountId": "acc-demo-001",
+      "categoryId": "cat-system-1",
+      "amount": 20,
+      "type": "EXPENSE",
+      "description": "Comida",
+      "date": "2026-09-22",
+      "recurrence": "NONE",
+      "paymentMethod": "CASH",
+      "createdAt": "2026-09-22T20:55:24.347Z",
+      "updatedAt": "2026-09-22T20:55:24.347Z"
+    }
+  ]
+}

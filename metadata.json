@@ -1,0 +1,6 @@
+{
+  "name": "FinanAPP",
+  "description": "Aplicación web de gestión financiera personal con control de ingresos, gastos, categorías y autenticación segura.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
