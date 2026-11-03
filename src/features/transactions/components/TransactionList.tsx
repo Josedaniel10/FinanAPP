@@ -3,16 +3,13 @@ import { Transaction, TransactionType } from '../types';
 import {
   TrendingUp,
   TrendingDown,
+  ArrowLeftRight,
   Edit2,
   Trash2,
-  Calendar,
-  CreditCard,
-  Repeat,
-  FileText,
-  AlertTriangle,
   Eye,
   ArrowRight,
 } from 'lucide-react';
+import { DSChip, DSButton, DSModal } from '../../../design-system';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -50,274 +47,213 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     }
   };
 
-  const formatPaymentMethod = (pm?: string) => {
-    switch (pm) {
-      case 'CASH':
-        return 'Efectivo';
-      case 'DEBIT_CARD':
-        return 'T. Débito';
-      case 'CREDIT_CARD':
-        return 'T. Crédito';
-      case 'TRANSFER':
-        return 'Transferencia';
-      case 'OTHER':
-        return 'Otro';
-      default:
-        return null;
-    }
-  };
-
-  const formatRecurrence = (rec?: string) => {
-    switch (rec) {
-      case 'DAILY':
-        return 'Diaria';
-      case 'WEEKLY':
-        return 'Semanal';
-      case 'MONTHLY':
-        return 'Mensual';
-      case 'YEARLY':
-        return 'Anual';
-      default:
-        return null;
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="space-y-3 py-4">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="p-4 bg-white rounded-2xl border border-slate-100 shadow-2xs animate-pulse flex items-center gap-3"
+          >
+            <div className="w-10 h-10 rounded-xl bg-slate-200 shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-slate-200 rounded w-1/3" />
+              <div className="h-3 bg-slate-100 rounded w-1/2" />
+            </div>
+            <div className="h-5 bg-slate-200 rounded w-16" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-      {/* Header & Filter Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-        <div className="flex items-center gap-3">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">
-              Movimientos Recientes
-            </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              {transactions.length} movimiento(s) registrado(s)
-            </p>
-          </div>
-          {onViewAll && (
-            <button
-              onClick={onViewAll}
-              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 hover:underline cursor-pointer ml-2"
-            >
-              <span>Ver historial</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-          <button
-            type="button"
-            onClick={() => setFilter('ALL')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              filter === 'ALL'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('EXPENSE')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-              filter === 'EXPENSE'
-                ? 'bg-white text-rose-600 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <TrendingDown className="w-3.5 h-3.5" />
-            <span>Gastos</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter('INCOME')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-              filter === 'INCOME'
-                ? 'bg-white text-emerald-600 shadow-xs'
-                : 'text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Ingresos</span>
-          </button>
-        </div>
+    <div className="w-full">
+      {/* Horizontal Interactive Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none mb-3 -mx-1 px-1">
+        <DSChip
+          label="Todos"
+          isActive={filter === 'ALL'}
+          onClick={() => setFilter('ALL')}
+          count={transactions.length}
+        />
+        <DSChip
+          label="Gastos"
+          isActive={filter === 'EXPENSE'}
+          onClick={() => setFilter('EXPENSE')}
+          icon={<TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
+          count={transactions.filter((t) => t.type === 'EXPENSE').length}
+        />
+        <DSChip
+          label="Ingresos"
+          isActive={filter === 'INCOME'}
+          onClick={() => setFilter('INCOME')}
+          icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
+          count={transactions.filter((t) => t.type === 'INCOME').length}
+        />
+        <DSChip
+          label="Transferencias"
+          isActive={filter === 'TRANSFER'}
+          onClick={() => setFilter('TRANSFER')}
+          icon={<ArrowLeftRight className="w-3.5 h-3.5 text-blue-500" />}
+          count={transactions.filter((t) => t.type === 'TRANSFER').length}
+        />
       </div>
 
-      {/* Delete Confirmation Alert if selected */}
-      {deleteConfirmId && (
-        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 text-xs text-amber-900">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>
-              ¿Confirmas que deseas eliminar este movimiento? El saldo de la cuenta será recalculado automáticamente.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setDeleteConfirmId(null)}
-              disabled={isDeleting}
-              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => handleDelete(deleteConfirmId)}
-              disabled={isDeleting}
-              className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 cursor-pointer disabled:opacity-50"
-            >
-              {isDeleting ? 'Eliminando...' : 'Sí, eliminar'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* List content */}
       {filtered.length === 0 ? (
-        <div className="py-12 px-4 flex flex-col items-center justify-center text-center">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
-            <FileText className="w-6 h-6" />
-          </div>
-          <h3 className="text-sm font-semibold text-slate-700">
-            No hay movimientos para mostrar
-          </h3>
-          <p className="text-xs text-slate-400 max-w-sm mt-1">
-            {filter === 'ALL'
-              ? 'Comienza registrando tu primer ingreso o gasto con los botones superiores.'
-              : `No se encontraron registros en la sección de ${filter === 'INCOME' ? 'ingresos' : 'gastos'}.`}
+        <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/80 my-2">
+          <p className="text-sm font-semibold text-slate-700">Sin movimientos</p>
+          <p className="text-xs text-slate-400 mt-1">
+            No hay registros para el filtro seleccionado.
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-slate-100">
+        /* Vertical Cards Feed with Generous Touch Targets */
+        <div className="space-y-2.5">
           {filtered.map((tx) => {
             const isIncome = tx.type === 'INCOME';
-            const pmLabel = formatPaymentMethod(tx.paymentMethod);
-            const recLabel = formatRecurrence(tx.recurrence);
+            const isTransfer = tx.type === 'TRANSFER';
 
             return (
               <div
                 key={tx.id}
-                className="py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-slate-50/70 px-2 rounded-xl transition-colors"
+                onClick={() => onViewDetail?.(tx)}
+                className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-2xs hover:border-slate-300 active:bg-slate-50 transition-all flex items-center justify-between gap-3 cursor-pointer"
               >
-                {/* Left: Icon, Description, Category and Metadata */}
-                <div className="flex items-start gap-3.5">
-                  <div
-                    className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
-                      isIncome
-                        ? 'bg-emerald-50 text-emerald-600'
-                        : 'bg-rose-50 text-rose-600'
-                    }`}
-                  >
-                    {isIncome ? (
-                      <TrendingUp className="w-5 h-5" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5" />
+                {/* Left: Category Icon with 40x40 container */}
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isTransfer
+                      ? 'bg-blue-100 text-blue-700'
+                      : isIncome
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-rose-100 text-rose-700'
+                  }`}
+                >
+                  {isTransfer ? (
+                    <ArrowLeftRight className="w-5 h-5" />
+                  ) : isIncome ? (
+                    <TrendingUp className="w-5 h-5" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5" />
+                  )}
+                </div>
+
+                {/* Middle: Description & Clean Unboxed Metadata */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-900 truncate">
+                    {tx.description}
+                  </p>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5 truncate">
+                    <span>{tx.category?.name || 'General'}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-mono">{tx.date}</span>
+                    {tx.account && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span className="truncate">{tx.account.name}</span>
+                      </>
                     )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-slate-900">
-                        {tx.description}
-                      </span>
-                      {tx.category && (
-                        <span
-                          className="text-[11px] font-medium px-2 py-0.5 rounded-md text-white"
-                          style={{ backgroundColor: tx.category.color || '#6B7280' }}
-                        >
-                          {tx.category.name}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Metadata tags */}
-                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 flex-wrap">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>{tx.date}</span>
-                      </span>
-
-                      {tx.account && (
-                        <span className="flex items-center gap-1">
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>{tx.account.name}</span>
-                        </span>
-                      )}
-
-                      {isIncome && recLabel && (
-                        <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px] font-semibold">
-                          <Repeat className="w-3 h-3" />
-                          <span>{recLabel}</span>
-                        </span>
-                      )}
-
-                      {!isIncome && pmLabel && (
-                        <span className="text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-medium">
-                          {pmLabel}
-                        </span>
-                      )}
-
-                      {tx.notes && (
-                        <span className="italic text-slate-400">
-                          "{tx.notes}"
-                        </span>
-                      )}
-                    </div>
                   </div>
                 </div>
 
-                {/* Right: Amount and Actions */}
-                <div className="flex items-center justify-between sm:justify-end gap-4 pl-13 sm:pl-0">
-                  <div className="text-left sm:text-right">
+                {/* Right: Tabular Amount & Quick Actions */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="text-right mr-1">
                     <span
-                      className={`text-base font-bold ${
-                        isIncome ? 'text-emerald-600' : 'text-rose-600'
+                      className={`font-mono tabular-nums font-bold text-sm block ${
+                        isTransfer
+                          ? 'text-blue-700'
+                          : isIncome
+                          ? 'text-emerald-700'
+                          : 'text-rose-700'
                       }`}
                     >
-                      {isIncome ? '+' : '-'}$
-                      {tx.amount.toLocaleString('en-US', {
+                      {isIncome ? '+' : isTransfer ? '⇄ ' : '-'} $
+                      {tx.amount.toLocaleString('es-ES', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </span>
-                    <p className="text-[10px] text-slate-400 font-medium">
-                      {tx.account?.currency || 'USD'}
-                    </p>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    {onViewDetail && (
-                      <button
-                        onClick={() => onViewDetail(tx)}
-                        title="Ver detalle"
-                        className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => onEdit(tx)}
-                      title="Editar movimiento"
-                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirmId(tx.id)}
-                      title="Eliminar movimiento"
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* 48x48 Touch Actions */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(tx);
+                    }}
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-700 active:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    aria-label="Editar"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteConfirmId(tx.id);
+                    }}
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-rose-600 active:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                    aria-label="Eliminar"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {onViewAll && transactions.length > 5 && (
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="min-h-[48px] w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <span>Ver historial completo</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <DSModal
+        isOpen={Boolean(deleteConfirmId)}
+        onClose={() => setDeleteConfirmId(null)}
+        title="¿Eliminar movimiento?"
+        subtitle="Esta acción actualizará automáticamente el saldo de la cuenta."
+        footer={
+          <div className="flex gap-2 w-full">
+            <DSButton
+              variant="outline"
+              size="md"
+              className="flex-1 min-h-[48px]"
+              onClick={() => setDeleteConfirmId(null)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </DSButton>
+            <DSButton
+              variant="danger"
+              size="md"
+              className="flex-1 min-h-[48px]"
+              isLoading={isDeleting}
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+            >
+              Eliminar
+            </DSButton>
+          </div>
+        }
+      >
+        <p className="text-sm text-slate-600">
+          ¿Estás seguro de que deseas eliminar este movimiento financiero de manera permanente?
+        </p>
+      </DSModal>
     </div>
   );
 };

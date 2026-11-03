@@ -1,12 +1,21 @@
 import React from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
-import { Wallet, LogOut, LayoutDashboard, History, Target, Tag } from 'lucide-react';
+import {
+  Wallet,
+  LogOut,
+  LayoutDashboard,
+  History,
+  Target,
+  Tag,
+  ShieldCheck,
+} from 'lucide-react';
+import { AppTab } from '../../stores/uiStore';
 
-export type ActiveTabType = 'dashboard' | 'history' | 'categories' | 'budgets';
+export type ActiveTabType = AppTab;
 
 interface NavbarProps {
-  activeTab?: ActiveTabType;
-  onSelectTab?: (tab: ActiveTabType) => void;
+  activeTab?: AppTab;
+  onSelectTab?: (tab: AppTab) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -14,9 +23,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectTab,
 }) => {
   const { user, logout } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <header className="hidden md:block sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand and Navigation Tabs */}
         <div className="flex items-center gap-6">
@@ -37,9 +47,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Navigation Tabs if logged in */}
+          {/* Desktop Navigation Tabs */}
           {user && onSelectTab && (
-            <nav className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <nav className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
               <button
                 type="button"
                 onClick={() => onSelectTab('dashboard')}
@@ -88,6 +98,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Target className="w-3.5 h-3.5" />
                 <span>Presupuestos</span>
               </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => onSelectTab('admin')}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'admin'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-emerald-700 hover:text-emerald-900 bg-emerald-50/80'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Admin</span>
+                </button>
+              )}
             </nav>
           )}
         </div>
@@ -95,67 +119,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* User profile & actions */}
         {user && (
           <div className="flex items-center gap-3">
-            {/* Mobile Tab Switcher */}
-            {onSelectTab && (
-              <div className="flex sm:hidden items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('dashboard')}
-                  className={`p-1.5 rounded-lg text-xs font-semibold ${
-                    activeTab === 'dashboard'
-                      ? 'bg-white text-emerald-700 shadow-xs'
-                      : 'text-slate-500'
-                  }`}
-                  title="Dashboard"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('history')}
-                  className={`p-1.5 rounded-lg text-xs font-semibold ${
-                    activeTab === 'history'
-                      ? 'bg-white text-emerald-700 shadow-xs'
-                      : 'text-slate-500'
-                  }`}
-                  title="Historial"
-                >
-                  <History className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('categories')}
-                  className={`p-1.5 rounded-lg text-xs font-semibold ${
-                    activeTab === 'categories'
-                      ? 'bg-white text-emerald-700 shadow-xs'
-                      : 'text-slate-500'
-                  }`}
-                  title="Categorías"
-                >
-                  <Tag className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectTab('budgets')}
-                  className={`p-1.5 rounded-lg text-xs font-semibold ${
-                    activeTab === 'budgets'
-                      ? 'bg-white text-emerald-700 shadow-xs'
-                      : 'text-slate-500'
-                  }`}
-                  title="Presupuestos"
-                >
-                  <Target className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200">
               <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
                 {user.name.charAt(0).toUpperCase()}
               </div>
-              <div className="text-left hidden md:block">
+              <div className="text-left">
                 <p className="text-xs font-semibold text-slate-800 leading-tight">
                   {user.name}
+                  {user.role === 'ADMIN' && (
+                    <span className="ml-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                      ADMIN
+                    </span>
+                  )}
                 </p>
                 <p className="text-[10px] text-slate-500 leading-tight">
                   {user.email}

@@ -11,8 +11,12 @@ export class AuthService {
   constructor(private readonly repository: AuthRepository = authRepository) {}
 
   private generateToken(userId: string, email: string, role: string): string {
-    return jwt.sign({ userId, email, role }, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    const secret = env.JWT_SECRET || 'finanapp_super_secret_jwt_key_2026_scrum';
+    // 7 days in numeric seconds (60 * 60 * 24 * 7)
+    const expiresInSeconds = 604800;
+
+    return jwt.sign({ userId, email, role }, secret, {
+      expiresIn: expiresInSeconds,
     });
   }
 

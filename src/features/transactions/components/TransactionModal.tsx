@@ -8,10 +8,21 @@ import {
   PaymentMethodType,
   CreateTransactionPayload,
 } from '../types';
-import { X, TrendingUp, TrendingDown, DollarSign, Calendar, Tag, CreditCard, Repeat, FileText, Loader2, Plus } from 'lucide-react';
+import {
+  TrendingUp,
+  TrendingDown,
+  ArrowLeftRight,
+  DollarSign,
+  Calendar,
+  Tag,
+  CreditCard,
+  Plus,
+} from 'lucide-react';
 import { CategoryModal } from '../../categories/components/CategoryModal';
 import { categoryService } from '../../categories/services/category.service';
 import { CreateCategoryPayload } from '../../categories/types';
+import { DSBottomSheet, DSButton, DSInput, DSSelect, DSAlert } from '../../../design-system';
+import { showToast } from '../../../stores/toastStore';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -41,6 +52,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [description, setDescription] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [accountId, setAccountId] = useState<string>('');
+  const [destinationAccountId, setDestinationAccountId] = useState<string>('');
+  const [destinationAmount, setDestinationAmount] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0] || '');
   const [recurrence, setRecurrence] = useState<RecurrenceType>('NONE');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('CASH');
@@ -52,8 +65,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     setLocalCategories(initialCategories);
   }, [initialCategories]);
 
-  // Filter categories matching current transaction type
-  const availableCategories = localCategories.filter((c) => c.type === type);
+  const availableCategories = localCategories.filter((c) =>
+    type === 'TRANSFER' ? true : c.type === type
+  );
 
   const handleInlineCreateCategory = async (payload: CreateCategoryPayload) => {
     const res = await categoryService.createCategory(payload);
@@ -63,15 +77,21 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     if (onCategoryCreated) {
       onCategoryCreated(newCat);
     }
+    setIsCategoryModalOpen(false);
+    showToast({ type: 'success', message: `Categoría "${newCat.name}" creada.` });
   };
 
   useEffect(() => {
     if (initialTransaction) {
       setType(initialTransaction.type);
-      setAmount(initialTransaction.amount.toString());
+      setAmount(String(initialTransaction.amount));
       setDescription(initialTransaction.description);
       setCategoryId(initialTransaction.categoryId);
       setAccountId(initialTransaction.accountId);
+      setDestinationAccountId(initialTransaction.destinationAccountId || '');
+      setDestinationAmount(
+        initialTransaction.destinationAmount ? String(initialTransaction.destinationAmount) : ''
+      );
       setDate(initialTransaction.date);
       setRecurrence(initialTransaction.recurrence || 'NONE');
       setPaymentMethod(initialTransaction.paymentMethod || 'CASH');
@@ -84,27 +104,24 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setRecurrence('NONE');
       setPaymentMethod('CASH');
       setNotes('');
+      setDestinationAccountId('');
+      setDestinationAmount('');
+
       if (accounts.length > 0) {
         const defaultAcc = accounts.find((a) => a.isDefault) || accounts[0];
-        setAccountId(defaultAcc ? defaultAcc.id : '');
+        setAccountId(defaultAcc.id);
+        const secondAcc = accounts.find((a) => a.id !== defaultAcc.id);
+        if (secondAcc) setDestinationAccountId(secondAcc.id);
+      }
+      if (initialCategories.length > 0) {
+        const matchingCat = initialCategories.find(
+          (c) => defaultType === 'TRANSFER' || c.type === defaultType
+        );
+        if (matchingCat) setCategoryId(matchingCat.id);
       }
     }
     setError(null);
-  }, [initialTransaction, defaultType, accounts, isOpen]);
-
-  // Set default category when type or category list changes
-  useEffect(() => {
-    if (!initialTransaction && availableCategories.length > 0) {
-      if (!availableCategories.some((c) => c.id === categoryId)) {
-        const firstCat = availableCategories[0];
-        if (firstCat) {
-          setCategoryId(firstCat.id);
-        }
-      }
-    }
-  }, [type, availableCategories, initialTransaction, categoryId]);
-
-  if (!isOpen) return null;
+  }, [initialTransaction, isOpen, defaultType, accounts, initialCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,115 +129,147 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('El monto debe ser un número válido mayor que 0.');
+      setError('Por favor ingresa un monto válido mayor a 0');
       return;
     }
 
     if (!description.trim()) {
-      setError('Por favor ingresa una descripción para el movimiento.');
+      setError('Por favor ingresa una descripción para el movimiento');
       return;
     }
 
     if (!categoryId) {
-      setError('Por favor selecciona una categoría.');
+      setError('Por favor selecciona una categoría');
       return;
     }
 
-    if (!date) {
-      setError('Por favor selecciona una fecha válida.');
-      return;
+    if (type === 'TRANSFER') {
+      if (!destinationAccountId) {
+        setError('Debes seleccionar una cuenta de destino para la transferencia');
+        return;
+      }
+      if (destinationAccountId === accountId) {
+        setError('La cuenta de destino no puede ser igual a la cuenta de origen');
+        return;
+      }
     }
-
-    const payload: CreateTransactionPayload = {
-      amount: Math.round(parsedAmount * 100) / 100,
-      type,
-      categoryId,
-      accountId: accountId || undefined,
-      date,
-      description: description.trim(),
-      notes: notes.trim() || undefined,
-      ...(type === 'INCOME' ? { recurrence } : { paymentMethod }),
-    };
 
     setIsSubmitting(true);
     try {
+      const payload: CreateTransactionPayload = {
+        amount: parsedAmount,
+        type,
+        categoryId,
+        accountId: accountId || undefined,
+        destinationAccountId: type === 'TRANSFER' ? destinationAccountId : undefined,
+        destinationAmount:
+          type === 'TRANSFER' && destinationAmount ? parseFloat(destinationAmount) : undefined,
+        date,
+        description: description.trim(),
+        recurrence,
+        paymentMethod,
+        notes: notes.trim() || undefined,
+      };
+
       await onSave(payload, initialTransaction?.id);
+      showToast({
+        type: 'success',
+        message: initialTransaction ? 'Movimiento actualizado correctamente' : 'Movimiento registrado con éxito',
+      });
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Error al guardar el movimiento.');
+      setError(err?.message || 'Error al guardar el movimiento');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">
-              {initialTransaction ? 'Editar Movimiento' : 'Nuevo Movimiento'}
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {type === 'INCOME' ? 'Registro de Ingreso' : 'Registro de Gasto'}
-            </p>
+    <>
+      <DSBottomSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        title={initialTransaction ? 'Editar Movimiento' : 'Nuevo Movimiento'}
+        subtitle="Registro táctil rápido de ingresos, gastos y transferencias"
+        maxHeight="75"
+        footer={
+          <div className="flex gap-3">
+            <DSButton
+              type="button"
+              variant="outline"
+              size="md"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1 min-h-[48px]"
+            >
+              Cancelar
+            </DSButton>
+            <DSButton
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={isSubmitting}
+              onClick={handleSubmit}
+              className="flex-1 min-h-[48px]"
+            >
+              {initialTransaction ? 'Guardar Cambios' : 'Registrar'}
+            </DSButton>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <DSAlert type="error" message={error} onClose={() => setError(null)} />}
 
-        {/* Type Selector (Ingreso / Gasto) */}
-        {!initialTransaction && (
-          <div className="px-6 pt-5">
-            <div className="grid grid-cols-2 gap-3 p-1 bg-slate-100 rounded-2xl">
-              <button
-                type="button"
-                onClick={() => setType('EXPENSE')}
-                className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  type === 'EXPENSE'
-                    ? 'bg-rose-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <TrendingDown className="w-4 h-4" />
-                <span>Gasto</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('INCOME')}
-                className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  type === 'INCOME'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span>Ingreso</span>
-              </button>
-            </div>
+          {/* Type Selector (Horizontal Segmented Buttons with 44px min height) */}
+          <div className="p-1 bg-slate-100 rounded-2xl grid grid-cols-3 gap-1">
+            <button
+              type="button"
+              onClick={() => setType('EXPENSE')}
+              className={`min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                type === 'EXPENSE'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <TrendingDown className="w-4 h-4" />
+              <span>Gasto</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setType('INCOME')}
+              className={`min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                type === 'INCOME'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span>Ingreso</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setType('TRANSFER')}
+              className={`min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                type === 'TRANSFER'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              <span>Transferir</span>
+            </button>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
-              {error}
-            </div>
-          )}
-
-          {/* Monto */}
+          {/* Amount Input with big numeric font */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Monto ($ USD) *
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+              Monto
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold">
-                $
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <DollarSign className="w-5 h-5 text-emerald-600" />
               </div>
               <input
                 type="number"
@@ -230,177 +279,106 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors"
+                className="w-full min-h-[48px] pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xl font-bold tracking-tight focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
               />
             </div>
           </div>
 
-          {/* Descripción */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Descripción *
-            </label>
-            <input
-              type="text"
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={type === 'INCOME' ? 'Ej. Pago de quincena, bono...' : 'Ej. Compras del supermercado...'}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors"
-            />
-          </div>
+          {/* Description */}
+          <DSInput
+            label="Descripción"
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ej. Supermercado, Alquiler, Salario..."
+          />
 
-          {/* Categoría y Cuenta */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Categoría *</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsCategoryModalOpen(true)}
-                  className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 cursor-pointer"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Nueva</span>
-                </button>
-              </div>
-              <select
-                required
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors cursor-pointer"
+          {/* Accounts: Origin and optional Destination for Transfer */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <DSSelect
+              label={type === 'TRANSFER' ? 'Cuenta Origen' : 'Cuenta'}
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              leftIcon={<CreditCard className="w-4 h-4" />}
+            >
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name} ({acc.currency} {acc.balance.toFixed(2)})
+                </option>
+              ))}
+            </DSSelect>
+
+            {type === 'TRANSFER' && (
+              <DSSelect
+                label="Cuenta Destino"
+                value={destinationAccountId}
+                onChange={(e) => setDestinationAccountId(e.target.value)}
+                leftIcon={<ArrowLeftRight className="w-4 h-4" />}
               >
-                {availableCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-                <span>Cuenta / Destino</span>
-              </label>
-              <select
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors cursor-pointer"
-              >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} (${acc.balance.toFixed(2)})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Fecha y campo dinámico (Recurrencia o Método de pago) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>Fecha *</span>
-              </label>
-              <input
-                type="date"
-                required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors cursor-pointer"
-              />
-            </div>
-
-            {type === 'INCOME' ? (
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <Repeat className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Recurrencia</span>
-                </label>
-                <select
-                  value={recurrence}
-                  onChange={(e) => setRecurrence(e.target.value as RecurrenceType)}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors cursor-pointer"
-                >
-                  <option value="NONE">Única vez</option>
-                  <option value="DAILY">Diaria</option>
-                  <option value="WEEKLY">Semanal</option>
-                  <option value="MONTHLY">Mensual</option>
-                  <option value="YEARLY">Anual</option>
-                </select>
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Método de pago</span>
-                </label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors cursor-pointer"
-                >
-                  <option value="CASH">Efectivo</option>
-                  <option value="DEBIT_CARD">Tarjeta de Débito</option>
-                  <option value="CREDIT_CARD">Tarjeta de Crédito</option>
-                  <option value="TRANSFER">Transferencia</option>
-                  <option value="OTHER">Otro</option>
-                </select>
-              </div>
+                <option value="">Seleccionar destino...</option>
+                {accounts
+                  .filter((a) => a.id !== accountId)
+                  .map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} ({acc.currency} {acc.balance.toFixed(2)})
+                    </option>
+                  ))}
+              </DSSelect>
             )}
           </div>
 
-          {/* Notas opcionales */}
+          {/* Category Selector with Inline Quick Add Button */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
-              <span>Notas adicionales (opcional)</span>
-            </label>
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Detalle o referencia..."
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-colors"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                Categoría
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 min-h-[36px] px-2 rounded-lg cursor-pointer hover:bg-emerald-50"
+              >
+                <Plus className="w-3.5 h-3.5" /> Nueva
+              </button>
+            </div>
+            <DSSelect
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              leftIcon={<Tag className="w-4 h-4" />}
+            >
+              <option value="">Seleccionar categoría...</option>
+              {availableCategories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </DSSelect>
           </div>
 
-          {/* Acciones */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+          {/* Date & Payment Method */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <DSInput
+              label="Fecha"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              leftIcon={<Calendar className="w-4 h-4" />}
+            />
+
+            <DSSelect
+              label="Método de Pago"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethodType)}
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-sm flex items-center gap-2 cursor-pointer transition-all ${
-                type === 'INCOME'
-                  ? 'bg-emerald-600 hover:bg-emerald-700'
-                  : 'bg-rose-600 hover:bg-rose-700'
-              } disabled:opacity-60`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Guardando...</span>
-                </>
-              ) : (
-                <span>{initialTransaction ? 'Actualizar' : 'Registrar'}</span>
-              )}
-            </button>
+              <option value="CASH">Efectivo</option>
+              <option value="DEBIT_CARD">Tarjeta de Débito</option>
+              <option value="CREDIT_CARD">Tarjeta de Crédito</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="OTHER">Otro</option>
+            </DSSelect>
           </div>
         </form>
-      </div>
+      </DSBottomSheet>
 
       <CategoryModal
         isOpen={isCategoryModalOpen}
@@ -408,6 +386,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         onSubmit={handleInlineCreateCategory}
         defaultType={type === 'INCOME' ? 'INCOME' : 'EXPENSE'}
       />
-    </div>
+    </>
   );
 };

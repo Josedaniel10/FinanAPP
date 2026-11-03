@@ -141,10 +141,11 @@ Rediseño integral de FinanAPP aplicando **Clean Architecture basada en módulos
 - [x] **Subtarea 4.1**: Crear `src/design-system/tokens.ts` con la definición central de temas, colores semánticos, tipografías y espaciados fácilmente modificables.
 - [x] **Subtarea 4.2**: Implementar componentes base desacoplados (`DSButton`, `DSInput`, `DSSelect`, `DSCard`, `DSModal`, `DSTable`, `DSBadge`, `DSAlert`).
 - [x] **Subtarea 4.3**: Migrar los formularios de Login y Registro a `React Hook Form` con validaciones Zod y componentes del Design System.
+- [x] **Hito Mobile-First UX/UI**: Adaptación ergonómica táctil con Bottom Navigation Bar fija, encabezado móvil mínimo, Modal Bottom Sheets con drag handle, Snackbars flotantes y Floating Action Button (FAB). (COMPLETADO)
 - *Punto de Control*: Pruebas visuales del Design System y validación de formularios con mensajes accesibles. (COMPLETADO)
 
 #### FASE 5: Nuevas Funcionalidades y Perfeccionamiento de Vistas
-- [ ] **Subtarea 5.1**: Implementar la vista del Panel de Administración (`AdminUsersView`) accesible únicamente para usuarios con rol `ADMIN`.
+- [x] **Subtarea 5.1**: Implementar la vista del Panel de Administración (`AdminUsersView`) accesible únicamente para usuarios con rol `ADMIN` con desbloqueo y cambio de roles. (COMPLETADO)
 - [ ] **Subtarea 5.2**: Implementar el módulo de Cuentas Financieras con soporte multidivisa y modal de transferencias entre cuentas propias.
 - [ ] **Subtarea 5.3**: Implementar el módulo de Metas de Ahorro y alertas visuales proactivas para presupuestos al 80% y 100% de consumo.
 - [ ] **Subtarea 5.4**: Implementar el módulo de Reportes Analíticos Financieros con visualización de métricas avanzadas y exportación estructurada a PDF y Excel/CSV.

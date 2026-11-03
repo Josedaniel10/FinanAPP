@@ -2,23 +2,47 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { useAuth } from './features/auth/hooks/useAuth';
 import { useAuthStore } from './stores/authStore';
+import { useUIStore, AppTab } from './stores/uiStore';
 import { LoginForm } from './features/auth/components/LoginForm';
 import { RegisterForm } from './features/auth/components/RegisterForm';
-import { Navbar, ActiveTabType } from './shared/components/Navbar';
+import { Navbar } from './shared/components/Navbar';
+import { MobileHeader } from './shared/components/MobileHeader';
+import { BottomNavBar } from './shared/components/BottomNavBar';
 import { WelcomeDashboard } from './features/dashboard/components/WelcomeDashboard';
 import { FinancialHistoryView } from './features/transactions/components/FinancialHistoryView';
 import { BudgetsView } from './features/budgets/components/BudgetsView';
 import { CategoriesView } from './features/categories/components/CategoriesView';
-import { Wallet, ShieldCheck, ArrowRight, TrendingUp, PieChart, Lock } from 'lucide-react';
+import { AdminUsersView } from './features/admin/components/AdminUsersView';
+import { DSFab, DSToastContainer } from './design-system';
+import { TransactionModal } from './features/transactions/components/TransactionModal';
+import { useAccountsQuery } from './features/accounts/hooks/useAccountsQuery';
+import { useCreateTransactionMutation } from './features/transactions/hooks/useTransactionsQuery';
+import { categoryService } from './features/categories/services/category.service';
+import { Category } from './features/transactions/types';
+import { Wallet, Plus } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [currentTab, setCurrentTab] = useState<ActiveTabType>('dashboard');
+  const { activeTab, setActiveTab } = useUIStore();
+
+  // Quick Mobile Transaction FAB State
+  const [isFabModalOpen, setIsFabModalOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const { data: accounts = [] } = useAccountsQuery();
+  const createTxMutation = useCreateTransactionMutation();
 
   useEffect(() => {
     useAuthStore.getState().initialize();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      categoryService.getCategories().then((res: { data: Category[] }) => {
+        setCategories(res.data);
+      }).catch(() => {});
+    }
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -36,112 +60,117 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // If user is authenticated, render authenticated app layout
+  // If user is authenticated, render responsive layout:
+  // - Desktop: Classic Navbar on top, full width multi-column content, no bottom bar
+  // - Mobile: MobileHeader on top, compact cards, Bottom Sheet modals, FAB and BottomNavBar
   if (user) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-        <Navbar activeTab={currentTab} onSelectTab={setCurrentTab} />
-        <main className="flex-1">
-          {currentTab === 'dashboard' && (
-            <WelcomeDashboard onNavigateToHistory={() => setCurrentTab('history')} />
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-500 selection:text-white">
+        {/* Desktop Navigation Header (hidden on mobile, visible md+) */}
+        <Navbar activeTab={activeTab} onSelectTab={setActiveTab} />
+
+        {/* Mobile Minimal Top Header (visible on mobile only, hidden md+) */}
+        <div className="block md:hidden">
+          <MobileHeader />
+        </div>
+
+        {/* Main Content Area: Responsive padding for desktop vs mobile */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 pb-24 md:pb-8">
+          {activeTab === 'dashboard' && (
+            <WelcomeDashboard onNavigateToHistory={() => setActiveTab('history')} />
           )}
-          {currentTab === 'history' && (
-            <FinancialHistoryView onNavigateToDashboard={() => setCurrentTab('dashboard')} />
+          {activeTab === 'history' && (
+            <FinancialHistoryView onNavigateToDashboard={() => setActiveTab('dashboard')} />
           )}
-          {currentTab === 'categories' && <CategoriesView />}
-          {currentTab === 'budgets' && <BudgetsView />}
+          {activeTab === 'budgets' && <BudgetsView />}
+          {activeTab === 'categories' && <CategoriesView />}
+          {activeTab === 'admin' && <AdminUsersView />}
         </main>
-        <footer className="border-t border-slate-200 py-6 text-center text-xs text-slate-400 bg-white">
-          FinanAPP © {new Date().getFullYear()} • Gestión Financiera Personal
+
+        {/* Floating Action Button (FAB): Mobile Only */}
+        <div className="block md:hidden">
+          <DSFab
+            onClick={() => setIsFabModalOpen(true)}
+            icon={<Plus className="w-6 h-6" />}
+            ariaLabel="Registrar nuevo movimiento"
+          />
+        </div>
+
+        {/* Quick Add Bottom Sheet / Modal Triggered by FAB on Mobile */}
+        <TransactionModal
+          isOpen={isFabModalOpen}
+          onClose={() => setIsFabModalOpen(false)}
+          onSave={async (payload) => {
+            await createTxMutation.mutateAsync(payload);
+          }}
+          categories={categories}
+          accounts={accounts as any}
+          defaultType="EXPENSE"
+          onCategoryCreated={(newCat) => setCategories((prev) => [...prev, newCat])}
+        />
+
+        {/* Non-intrusive Floating Feedback Snackbars/Toasts */}
+        <DSToastContainer />
+
+        {/* Mobile Bottom Navigation Bar (hidden on desktop, visible mobile) */}
+        <div className="block md:hidden">
+          <BottomNavBar activeTab={activeTab} onSelectTab={setActiveTab} />
+        </div>
+
+        {/* Desktop Footer (visible md+, hidden on mobile to avoid vertical clutter) */}
+        <footer className="hidden md:block border-t border-slate-200 py-6 text-center text-xs text-slate-400 bg-white">
+          FinanAPP © {new Date().getFullYear()} • Plataforma de Gestión Financiera Personal
         </footer>
       </div>
     );
   }
 
-  // If not authenticated, render Login / Register screen
+  // If not authenticated, render Login / Register view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-800/20">
-        {/* Left column: Brand & Context Presentation */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-800 to-teal-900 p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 flex items-center justify-center p-3 sm:p-6">
+      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 border border-slate-800/20">
+        {/* Presentation Column (Desktop/Tablet) */}
+        <div className="hidden md:flex md:col-span-5 bg-gradient-to-br from-emerald-800 to-teal-900 p-8 text-white flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
-                <Wallet className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
+                <Wallet className="w-5 h-5" />
               </div>
-              <div>
-                <span className="text-xl font-bold tracking-tight">FinanAPP</span>
-                <span className="block text-[11px] text-emerald-300 font-medium">
-                  Gestión Financiera Personal
-                </span>
-              </div>
+              <span className="text-xl font-bold tracking-tight">FinanAPP</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
+            <h1 className="text-2xl font-extrabold tracking-tight leading-snug">
               Toma el control inteligente de tu dinero.
             </h1>
-            <p className="mt-3 text-emerald-100 text-xs sm:text-sm leading-relaxed">
-              Registra tus ingresos, gastos, consulta balances en tiempo real y gestiona presupuestos con máxima seguridad.
+            <p className="mt-3 text-emerald-100 text-xs leading-relaxed">
+              Registra tus ingresos, gastos, transferencias y presupuestos en cualquier dispositivo con total comodidad.
             </p>
-
-            <div className="mt-8 space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-emerald-700/50 flex items-center justify-center shrink-0 mt-0.5">
-                  <TrendingUp className="w-4 h-4 text-emerald-300" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-white">Ingresos y Gastos</p>
-                  <p className="text-[11px] text-emerald-200">
-                    Control detallado de cada movimiento y saldo actualizado.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-emerald-700/50 flex items-center justify-center shrink-0 mt-0.5">
-                  <PieChart className="w-4 h-4 text-emerald-300" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-white">Categorías y Presupuestos</p>
-                  <p className="text-[11px] text-emerald-200">
-                    Organización por rubros de gasto e ingreso personalizables.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg bg-emerald-700/50 flex items-center justify-center shrink-0 mt-0.5">
-                  <Lock className="w-4 h-4 text-emerald-300" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-white">Seguridad en tus finanzas</p>
-                  <p className="text-[11px] text-emerald-200">
-                    Protección avanzada y resguardo seguro de tu información financiera.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-emerald-700/50 flex items-center justify-between text-[11px] text-emerald-300 relative z-10">
-            <span>Acceso seguro</span>
-            <span className="flex items-center gap-1 font-semibold text-emerald-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Protegido
-            </span>
+          <div className="text-[11px] text-emerald-300 relative z-10">
+            FinanAPP • Inteligencia y Control Financiero Personal
           </div>
         </div>
 
-        {/* Right column: Auth Form */}
-        <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center bg-white">
-          <div className="max-w-md mx-auto w-full">
-            {/* Tabs selector */}
-            <div className="flex p-1 bg-slate-100 rounded-xl mb-6">
+        {/* Form Column */}
+        <div className="p-6 sm:p-8 md:col-span-7 flex flex-col justify-center bg-white">
+          <div className="max-w-sm mx-auto w-full">
+            {/* Mobile Brand Wordmark for Small Screens */}
+            <div className="md:hidden flex items-center justify-center gap-2 mb-6">
+              <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-xs">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <span className="text-xl font-black text-slate-900 tracking-tight">
+                FinanAPP
+              </span>
+            </div>
+
+            {/* Segmented Tab Switcher with 44px min height */}
+            <div className="flex p-1 bg-slate-100 rounded-2xl mb-6">
               <button
                 type="button"
                 onClick={() => setAuthMode('login')}
-                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 min-h-[44px] py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   authMode === 'login'
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -152,7 +181,7 @@ const MainAppContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setAuthMode('register')}
-                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 min-h-[44px] py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   authMode === 'register'
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'

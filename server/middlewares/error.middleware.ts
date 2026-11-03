@@ -18,6 +18,6 @@ export const errorHandler = (
   console.error('Unhandled server error:', err);
   return res.status(500).json({
     error: 'Ocurrió un error inesperado en el servidor',
-    details: null,
+    details: process.env.NODE_ENV !== 'production' && err instanceof Error ? err.message : null,
   });
 };
