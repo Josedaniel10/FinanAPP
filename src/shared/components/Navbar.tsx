@@ -8,6 +8,8 @@ import {
   Target,
   Tag,
   ShieldCheck,
+  CreditCard,
+  PiggyBank,
 } from 'lucide-react';
 import { AppTab } from '../../stores/uiStore';
 
@@ -76,6 +78,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
               <button
                 type="button"
+                onClick={() => onSelectTab('accounts')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'accounts'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Cuentas</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => onSelectTab('categories')}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
                   activeTab === 'categories'
@@ -97,6 +111,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Target className="w-3.5 h-3.5" />
                 <span>Presupuestos</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectTab('savings')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'savings'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <PiggyBank className="w-3.5 h-3.5" />
+                <span>Ahorros</span>
               </button>
               {isAdmin && (
                 <button

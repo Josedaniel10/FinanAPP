@@ -12,6 +12,8 @@ import { WelcomeDashboard } from './features/dashboard/components/WelcomeDashboa
 import { FinancialHistoryView } from './features/transactions/components/FinancialHistoryView';
 import { BudgetsView } from './features/budgets/components/BudgetsView';
 import { CategoriesView } from './features/categories/components/CategoriesView';
+import { AccountsView } from './features/accounts/components/AccountsView';
+import { SavingsView } from './features/savings/components/SavingsView';
 import { AdminUsersView } from './features/admin/components/AdminUsersView';
 import { DSFab, DSToastContainer } from './design-system';
 import { TransactionModal } from './features/transactions/components/TransactionModal';
@@ -77,12 +79,19 @@ const MainAppContent: React.FC = () => {
         {/* Main Content Area: Responsive padding for desktop vs mobile */}
         <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 pb-24 md:pb-8">
           {activeTab === 'dashboard' && (
-            <WelcomeDashboard onNavigateToHistory={() => setActiveTab('history')} />
+            <WelcomeDashboard
+              onNavigateToHistory={() => setActiveTab('history')}
+              onNavigateToAccounts={() => setActiveTab('accounts')}
+              onNavigateToBudgets={() => setActiveTab('budgets')}
+              onNavigateToSavings={() => setActiveTab('savings')}
+            />
           )}
           {activeTab === 'history' && (
             <FinancialHistoryView onNavigateToDashboard={() => setActiveTab('dashboard')} />
           )}
+          {activeTab === 'accounts' && <AccountsView />}
           {activeTab === 'budgets' && <BudgetsView />}
+          {activeTab === 'savings' && <SavingsView />}
           {activeTab === 'categories' && <CategoriesView />}
           {activeTab === 'admin' && <AdminUsersView />}
         </main>

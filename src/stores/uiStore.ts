@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export type AppTab =
   | 'dashboard'
   | 'history'
+  | 'accounts'
   | 'categories'
   | 'budgets'
   | 'savings'

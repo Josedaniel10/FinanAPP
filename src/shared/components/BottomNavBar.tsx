@@ -4,6 +4,7 @@ import { AppTab } from '../../stores/uiStore';
 import {
   LayoutDashboard,
   ArrowLeftRight,
+  CreditCard,
   PieChart,
   Layers,
   ShieldCheck,
@@ -32,6 +33,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       id: 'history' as AppTab,
       label: 'Movimientos',
       icon: ArrowLeftRight,
+    },
+    {
+      id: 'accounts' as AppTab,
+      label: 'Cuentas',
+      icon: CreditCard,
     },
     {
       id: 'budgets' as AppTab,

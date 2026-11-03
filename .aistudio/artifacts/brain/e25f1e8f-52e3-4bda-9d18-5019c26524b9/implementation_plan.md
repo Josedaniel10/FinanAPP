@@ -146,7 +146,7 @@ Rediseño integral de FinanAPP aplicando **Clean Architecture basada en módulos
 
 #### FASE 5: Nuevas Funcionalidades y Perfeccionamiento de Vistas
 - [x] **Subtarea 5.1**: Implementar la vista del Panel de Administración (`AdminUsersView`) accesible únicamente para usuarios con rol `ADMIN` con desbloqueo y cambio de roles. (COMPLETADO)
-- [ ] **Subtarea 5.2**: Implementar el módulo de Cuentas Financieras con soporte multidivisa y modal de transferencias entre cuentas propias.
-- [ ] **Subtarea 5.3**: Implementar el módulo de Metas de Ahorro y alertas visuales proactivas para presupuestos al 80% y 100% de consumo.
+- [x] **Subtarea 5.2**: Implementar el módulo de Cuentas Financieras con soporte multidivisa y modal de transferencias entre cuentas propias. (COMPLETADO)
+- [x] **Subtarea 5.3**: Implementar el módulo de Metas de Ahorro y alertas visuales proactivas para presupuestos al 80% y 100% de consumo. (COMPLETADO)
 - [ ] **Subtarea 5.4**: Implementar el módulo de Reportes Analíticos Financieros con visualización de métricas avanzadas y exportación estructurada a PDF y Excel/CSV.
 - *Punto de Control*: Auditoría final de todas las vistas, pruebas de compilación y verificación integral del flujo contable.
