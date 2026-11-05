@@ -10,18 +10,18 @@ import { errorHandler } from './server/middlewares/error.middleware';
 
 import mongoose from 'mongoose';
 
-async function bootstrap() {
+export async function initializeDatabase(): Promise<void> {
   // 1. Initialize MongoDB Atlas connection and system seed
-  let isAtlasConnected = false;
   try {
     await connectMongoDB();
     await runDatabaseSeed();
-    isAtlasConnected = true;
   } catch (err: any) {
     console.warn('⚠️ [MongoDB Atlas] Conexión pendiente. El servidor web iniciará en el puerto 3000 para servir la aplicación.');
     console.warn(`👉 Aviso: ${err.message || err}`);
   }
+}
 
+export function createApp() {
   const app = express();
 
   // 2. Middlewares
@@ -51,9 +51,17 @@ async function bootstrap() {
   // 4. API Error Handling Middleware
   app.use('/api/v1', errorHandler);
 
-  // 5. Frontend serving
-  const isProduction = env.NODE_ENV === 'production';
+  // 6. Global error handler fallback
+  app.use(errorHandler);
+  return app;
+}
 
+async function bootstrap() {
+  await initializeDatabase();
+  const app = createApp();
+
+  // Frontend serving
+  const isProduction = env.NODE_ENV === 'production';
   if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
@@ -70,9 +78,6 @@ async function bootstrap() {
       });
     }
   }
-
-  // 6. Global error handler fallback
-  app.use(errorHandler);
 
   // AI Studio environment requires server to listen strictly on port 3000
   const PORT = 3000;
@@ -92,7 +97,9 @@ async function bootstrap() {
   });
 }
 
-bootstrap().catch((err) => {
-  console.error('Fatal bootstrap error:', err);
-  process.exit(1);
-});
+if (!process.env.VERCEL) {
+  bootstrap().catch((err) => {
+    console.error('Fatal bootstrap error:', err);
+    process.exit(1);
+  });
+}
