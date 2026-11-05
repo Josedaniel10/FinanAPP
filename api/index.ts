@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Express } from 'express';
-import { createApp, initializeDatabase } from '../server';
+import { createApp, initializeDatabase } from '../server.js';
 
 let appPromise: Promise<Express> | undefined;
 

@@ -37,11 +37,17 @@ axiosInstance.interceptors.request.use(
 // Response Interceptor: Standardize API responses & errors
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ error?: string; message?: string; details?: unknown }>) => {
+  (error: AxiosError<{ error?: unknown; message?: unknown; details?: unknown }>) => {
     if (error.response) {
       const { status, data } = error.response;
+      const rawMessage = data?.error || data?.message;
       const message =
-        data?.error || data?.message || `Error del servidor (${status})`;
+        typeof rawMessage === 'string'
+          ? rawMessage
+          : rawMessage && typeof rawMessage === 'object' && 'message' in rawMessage &&
+              typeof rawMessage.message === 'string'
+            ? rawMessage.message
+            : `Error del servidor (${status})`;
 
       // If token expired or unauthorized on protected route, clean token
       if (status === 401 && !error.config?.url?.includes('/auth/login')) {
