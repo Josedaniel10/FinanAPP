@@ -8,11 +8,16 @@ export type AppTab =
   | 'budgets'
   | 'savings'
   | 'reports'
-  | 'admin';
+  | 'admin'
+  | 'profile';
 
 interface UIState {
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
+  isSidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  isSidebarCollapsed: boolean;
+  toggleSidebarCollapse: () => void;
   // Modals state
   isTransactionModalOpen: boolean;
   isAccountModalOpen: boolean;
@@ -28,6 +33,10 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   activeTab: 'dashboard',
   setActiveTab: (tab) => set({ activeTab: tab }),
+  isSidebarOpen: false,
+  setSidebarOpen: (open) => set({ isSidebarOpen: open }),
+  isSidebarCollapsed: false,
+  toggleSidebarCollapse: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
 
   isTransactionModalOpen: false,
   isAccountModalOpen: false,

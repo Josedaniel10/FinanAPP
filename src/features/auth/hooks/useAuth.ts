@@ -13,5 +13,7 @@ export const useAuth = () => {
     register: store.register,
     logout: store.logout,
     clearError: store.clearError,
+    refreshUser: store.refreshUser,
+    setUser: store.setUser,
   };
 };

@@ -15,15 +15,33 @@ interface AuthState {
   logout: () => void;
   clearError: () => void;
   initialize: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  setUser: (user: User) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: localStorage.getItem('finanapp_token'),
   isLoading: true,
   error: null,
   lockInfo: null,
   attemptsRemaining: null,
+
+  setUser: (user: User) => {
+    localStorage.setItem('finanapp_user', JSON.stringify(user));
+    set({ user });
+  },
+
+  refreshUser: async () => {
+    try {
+      const response = await authService.getCurrentUser();
+      const user = response.data.user;
+      localStorage.setItem('finanapp_user', JSON.stringify(user));
+      set({ user });
+    } catch {
+      // keep current user or ignore
+    }
+  },
 
   initialize: async () => {
     const token = localStorage.getItem('finanapp_token');

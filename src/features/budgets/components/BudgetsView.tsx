@@ -337,7 +337,7 @@ export const BudgetsView: React.FC = () => {
       {loading ? (
         <div className="py-20 text-center text-xs text-slate-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
-          Cargando presupuestos de MongoDB...
+          Cargando tus presupuestos...
         </div>
       ) : filteredBudgets.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

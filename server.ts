@@ -49,7 +49,8 @@ async function bootstrap() {
   // 6. Global error handler fallback
   app.use(errorHandler);
 
-  const PORT = env.PORT || 3000;
+  // AI Studio environment requires server to listen strictly on port 3000
+  const PORT = 3000;
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 FinanAPP Server running on http://localhost:${PORT}`);
     console.log(`📡 FinanAPP API v1 ready at http://localhost:${PORT}/api/v1`);

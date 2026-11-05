@@ -308,7 +308,7 @@ export const CategoriesView: React.FC = () => {
       {loading ? (
         <div className="py-20 text-center text-xs text-slate-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
-          Cargando categorías de MongoDB...
+          Cargando tus categorías...
         </div>
       ) : filteredCategories.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

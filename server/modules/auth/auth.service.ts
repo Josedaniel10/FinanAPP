@@ -146,6 +146,40 @@ export class AuthService {
     const { passwordHash: _, ...safeUser } = user;
     return safeUser;
   }
+
+  async updateProfile(userId: string, name: string): Promise<UserWithoutPassword> {
+    if (!name || name.trim().length === 0) {
+      throw new AppError(400, 'El nombre no puede estar vacío.');
+    }
+    const updated = await this.repository.update(userId, { name: name.trim() });
+    if (!updated) {
+      throw new AppError(404, 'Usuario no encontrado.');
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash: _, ...safeUser } = updated;
+    return safeUser;
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    const user = await this.repository.findById(userId);
+    if (!user) {
+      throw new AppError(404, 'Usuario no encontrado.');
+    }
+    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new AppError(400, 'La contraseña actual ingresada es incorrecta.');
+    }
+    if (newPassword.length < 6) {
+      throw new AppError(400, 'La nueva contraseña debe tener al menos 6 caracteres.');
+    }
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+    await this.repository.update(userId, { passwordHash });
+  }
 }
 
 export const authService = new AuthService();

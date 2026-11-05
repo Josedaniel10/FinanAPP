@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'motion/react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { transactionService } from '../../transactions/services/transaction.service';
 import {
@@ -29,6 +30,7 @@ import {
   AlertTriangle,
   PiggyBank,
   ArrowRight,
+  BarChart3,
 } from 'lucide-react';
 
 interface WelcomeDashboardProps {
@@ -36,6 +38,7 @@ interface WelcomeDashboardProps {
   onNavigateToAccounts?: () => void;
   onNavigateToBudgets?: () => void;
   onNavigateToSavings?: () => void;
+  onNavigateToReports?: () => void;
 }
 
 export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
@@ -43,6 +46,7 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
   onNavigateToAccounts,
   onNavigateToBudgets,
   onNavigateToSavings,
+  onNavigateToReports,
 }) => {
   const { user } = useAuth();
 
@@ -150,7 +154,12 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
   const hasCriticalBudgets = exceededBudgets.length > 0 || warningBudgets.length > 0;
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       {/* Saludo y Botones de Acción Rápida */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -162,21 +171,21 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => loadData(true)}
-            disabled={isRefreshing}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
-            title="Refrescar balance"
-            aria-label="Refrescar balance"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-600' : ''}`} />
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {onNavigateToReports && (
+            <button
+              type="button"
+              onClick={onNavigateToReports}
+              className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all hover:-translate-y-0.5 shadow-2xs text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+            >
+              <BarChart3 className="w-4 h-4 text-emerald-600" />
+              <span>Reportes</span>
+            </button>
+          )}
 
           <button
             onClick={handleOpenIncomeModal}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-1.5 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Registrar Ingreso</span>
@@ -184,7 +193,7 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
 
           <button
             onClick={handleOpenExpenseModal}
-            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-1.5 cursor-pointer"
           >
             <MinusCircle className="w-4 h-4" />
             <span>Registrar Gasto</span>
@@ -501,6 +510,6 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
         defaultType={modalType}
         onCategoryCreated={(newCat) => setCategories((prev) => [...prev, newCat])}
       />
-    </div>
+    </motion.div>
   );
 };

@@ -40,6 +40,31 @@ export class AuthController {
       next(error);
     }
   };
+
+  updateProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { name } = req.body;
+      const user = await this.service.updateProfile(req.user!.id, name);
+      res.status(200).json({
+        data: { user },
+        message: 'Perfil actualizado exitosamente',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  changePassword = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      await this.service.changePassword(req.user!.id, currentPassword, newPassword);
+      res.status(200).json({
+        message: 'Contraseña cambiada exitosamente',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export const authController = new AuthController();

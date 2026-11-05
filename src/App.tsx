@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider } from './features/auth/context/AuthContext';
 import { useAuth } from './features/auth/hooks/useAuth';
 import { useAuthStore } from './stores/authStore';
 import { useUIStore, AppTab } from './stores/uiStore';
 import { LoginForm } from './features/auth/components/LoginForm';
 import { RegisterForm } from './features/auth/components/RegisterForm';
-import { Navbar } from './shared/components/Navbar';
-import { MobileHeader } from './shared/components/MobileHeader';
+import { Sidebar } from './shared/components/Sidebar';
+import { AppHeader } from './shared/components/AppHeader';
 import { BottomNavBar } from './shared/components/BottomNavBar';
 import { WelcomeDashboard } from './features/dashboard/components/WelcomeDashboard';
 import { FinancialHistoryView } from './features/transactions/components/FinancialHistoryView';
@@ -14,7 +15,9 @@ import { BudgetsView } from './features/budgets/components/BudgetsView';
 import { CategoriesView } from './features/categories/components/CategoriesView';
 import { AccountsView } from './features/accounts/components/AccountsView';
 import { SavingsView } from './features/savings/components/SavingsView';
+import { ReportsView } from './features/reports/components/ReportsView';
 import { AdminUsersView } from './features/admin/components/AdminUsersView';
+import { UserProfileView } from './features/profile/components/UserProfileView';
 import { DSFab, DSToastContainer } from './design-system';
 import { TransactionModal } from './features/transactions/components/TransactionModal';
 import { useAccountsQuery } from './features/accounts/hooks/useAccountsQuery';
@@ -67,34 +70,53 @@ const MainAppContent: React.FC = () => {
   // - Mobile: MobileHeader on top, compact cards, Bottom Sheet modals, FAB and BottomNavBar
   if (user) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-500 selection:text-white">
-        {/* Desktop Navigation Header (hidden on mobile, visible md+) */}
-        <Navbar activeTab={activeTab} onSelectTab={setActiveTab} />
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-emerald-500 selection:text-white">
+        {/* Left Sidebar (Desktop fixed + Mobile slide-out drawer) */}
+        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
 
-        {/* Mobile Minimal Top Header (visible on mobile only, hidden md+) */}
-        <div className="block md:hidden">
-          <MobileHeader />
+        {/* Main Content Column */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+          {/* Clean Top Header (Breadcrumb, mobile menu button, profile avatar trigger, NO logout button) */}
+          <AppHeader onOpenProfile={() => setActiveTab('profile')} />
+
+          {/* Main Content Area with fluid motion transitions */}
+          <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 pb-24 md:pb-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                {activeTab === 'dashboard' && (
+                  <WelcomeDashboard
+                    onNavigateToHistory={() => setActiveTab('history')}
+                    onNavigateToAccounts={() => setActiveTab('accounts')}
+                    onNavigateToBudgets={() => setActiveTab('budgets')}
+                    onNavigateToSavings={() => setActiveTab('savings')}
+                    onNavigateToReports={() => setActiveTab('reports')}
+                  />
+                )}
+                {activeTab === 'history' && (
+                  <FinancialHistoryView onNavigateToDashboard={() => setActiveTab('dashboard')} />
+                )}
+                {activeTab === 'accounts' && <AccountsView />}
+                {activeTab === 'budgets' && <BudgetsView />}
+                {activeTab === 'savings' && <SavingsView />}
+                {activeTab === 'reports' && <ReportsView />}
+                {activeTab === 'categories' && <CategoriesView />}
+                {activeTab === 'admin' && <AdminUsersView />}
+                {activeTab === 'profile' && <UserProfileView />}
+              </motion.div>
+            </AnimatePresence>
+          </main>
+
+          {/* Desktop Footer */}
+          <footer className="hidden md:block border-t border-slate-200 py-6 text-center text-xs text-slate-400 bg-white">
+            FinanAPP © {new Date().getFullYear()} • Plataforma de Gestión Financiera Personal
+          </footer>
         </div>
-
-        {/* Main Content Area: Responsive padding for desktop vs mobile */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 pb-24 md:pb-8">
-          {activeTab === 'dashboard' && (
-            <WelcomeDashboard
-              onNavigateToHistory={() => setActiveTab('history')}
-              onNavigateToAccounts={() => setActiveTab('accounts')}
-              onNavigateToBudgets={() => setActiveTab('budgets')}
-              onNavigateToSavings={() => setActiveTab('savings')}
-            />
-          )}
-          {activeTab === 'history' && (
-            <FinancialHistoryView onNavigateToDashboard={() => setActiveTab('dashboard')} />
-          )}
-          {activeTab === 'accounts' && <AccountsView />}
-          {activeTab === 'budgets' && <BudgetsView />}
-          {activeTab === 'savings' && <SavingsView />}
-          {activeTab === 'categories' && <CategoriesView />}
-          {activeTab === 'admin' && <AdminUsersView />}
-        </main>
 
         {/* Floating Action Button (FAB): Mobile Only */}
         <div className="block md:hidden">
@@ -121,15 +143,10 @@ const MainAppContent: React.FC = () => {
         {/* Non-intrusive Floating Feedback Snackbars/Toasts */}
         <DSToastContainer />
 
-        {/* Mobile Bottom Navigation Bar (hidden on desktop, visible mobile) */}
+        {/* Mobile Bottom Navigation Bar */}
         <div className="block md:hidden">
           <BottomNavBar activeTab={activeTab} onSelectTab={setActiveTab} />
         </div>
-
-        {/* Desktop Footer (visible md+, hidden on mobile to avoid vertical clutter) */}
-        <footer className="hidden md:block border-t border-slate-200 py-6 text-center text-xs text-slate-400 bg-white">
-          FinanAPP © {new Date().getFullYear()} • Plataforma de Gestión Financiera Personal
-        </footer>
       </div>
     );
   }

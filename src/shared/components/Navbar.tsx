@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   CreditCard,
   PiggyBank,
+  BarChart3,
 } from 'lucide-react';
 import { AppTab } from '../../stores/uiStore';
 
@@ -123,6 +124,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <PiggyBank className="w-3.5 h-3.5" />
                 <span>Ahorros</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelectTab('reports')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === 'reports'
+                    ? 'bg-white text-emerald-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>Reportes</span>
               </button>
               {isAdmin && (
                 <button

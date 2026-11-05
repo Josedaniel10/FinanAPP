@@ -32,4 +32,18 @@ export const authService = {
       method: 'GET',
     });
   },
+
+  async updateProfile(name: string): Promise<UserResponse> {
+    return apiClient<UserResponse>('/auth/profile', {
+      method: 'PUT',
+      data: { name },
+    });
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return apiClient<{ message: string }>('/auth/password', {
+      method: 'PUT',
+      data: { currentPassword, newPassword },
+    });
+  },
 };

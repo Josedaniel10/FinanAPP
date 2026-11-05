@@ -89,14 +89,14 @@ export const AdminUsersView: React.FC = () => {
         <div className="flex items-center gap-2 text-emerald-700 mb-1">
           <ShieldCheck className="w-5 h-5" />
           <span className="text-xs font-bold uppercase tracking-wider">
-            Consola de Gobernanza
+            Gestión y Seguridad
           </span>
         </div>
         <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
           Administración de Usuarios
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Control de acceso, roles RBAC y desbloqueo de credenciales en MongoDB Atlas
+          Control de acceso, asignación de permisos y estado de cuentas
         </p>
       </div>
 

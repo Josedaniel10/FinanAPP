@@ -1,17 +1,38 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../features/auth/hooks/useAuth';
-import { Wallet, LogOut, ShieldCheck, User } from 'lucide-react';
+import { useUIStore, AppTab } from '../../stores/uiStore';
+import {
+  Wallet,
+  LogOut,
+  ShieldCheck,
+  User,
+  PieChart,
+  PiggyBank,
+  Tag,
+  CreditCard,
+  FileSpreadsheet,
+  ArrowRight,
+} from 'lucide-react';
 import { DSBottomSheet } from '../../design-system';
 
 export const MobileHeader: React.FC = () => {
   const { user, logout } = useAuth();
+  const { setActiveTab } = useUIStore();
   const [isProfileSheetOpen, setIsProfileSheetOpen] = useState(false);
+
+  const navigateTo = (tab: AppTab) => {
+    setActiveTab(tab);
+    setIsProfileSheetOpen(false);
+  };
 
   return (
     <>
       <header className="sticky top-0 z-30 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 flex items-center justify-between shadow-2xs">
         {/* Left: Brand Wordmark */}
-        <div className="flex items-center gap-2.5">
+        <div
+          onClick={() => navigateTo('dashboard')}
+          className="flex items-center gap-2.5 cursor-pointer"
+        >
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-xs">
             <Wallet className="w-4 h-4" />
           </div>
@@ -32,7 +53,7 @@ export const MobileHeader: React.FC = () => {
           type="button"
           onClick={() => setIsProfileSheetOpen(true)}
           className="min-h-[44px] min-w-[44px] flex items-center justify-center -mr-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer select-none"
-          aria-label="Abrir perfil de usuario"
+          aria-label="Abrir perfil y menú móvil"
         >
           <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold text-xs">
             {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
@@ -40,16 +61,17 @@ export const MobileHeader: React.FC = () => {
         </button>
       </header>
 
-      {/* User Profile Bottom Sheet */}
+      {/* User Profile & Navigation Bottom Sheet */}
       <DSBottomSheet
         isOpen={isProfileSheetOpen}
         onClose={() => setIsProfileSheetOpen(false)}
-        title="Perfil de Usuario"
-        maxHeight="50"
+        title="Mi Perfil & Accesos"
+        maxHeight="65"
       >
         <div className="space-y-4">
+          {/* User Info Card */}
           <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shrink-0">
+            <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shrink-0">
               {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
             </div>
             <div className="min-w-0 flex-1">
@@ -58,21 +80,77 @@ export const MobileHeader: React.FC = () => {
               </p>
               <p className="text-xs text-slate-500 truncate">{user?.email}</p>
               <div className="mt-1">
-                <span className="inline-block text-[11px] font-semibold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-md">
-                  Rol: {user?.role === 'ADMIN' ? 'Administrador' : 'Usuario Estándar'}
+                <span className="inline-block text-[10px] font-semibold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-md">
+                  Rol: {user?.role === 'ADMIN' ? 'Administrador' : 'Usuario'}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="pt-2">
+          {/* Quick Module Navigation Links with 48x48 hitboxes */}
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-1">
+              Módulos del Sistema
+            </p>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('reports')}
+              className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 flex items-center justify-between text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <span>Reportes & Exportación (CSV/PDF)</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('savings')}
+              className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 flex items-center justify-between text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <PiggyBank className="w-4 h-4 text-purple-600" />
+                <span>Metas de Ahorro</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('accounts')}
+              className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 flex items-center justify-between text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <CreditCard className="w-4 h-4 text-blue-600" />
+                <span>Cuentas Financieras & Divisas</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('categories')}
+              className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl hover:bg-slate-50 active:bg-slate-100 flex items-center justify-between text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <Tag className="w-4 h-4 text-amber-600" />
+                <span>Gestor de Categorías</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
+
+          {/* Logout Action */}
+          <div className="pt-2 border-t border-slate-100">
             <button
               type="button"
               onClick={() => {
                 setIsProfileSheetOpen(false);
                 logout();
               }}
-              className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 active:bg-rose-200 font-semibold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 active:bg-rose-200 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Cerrar Sesión</span>
