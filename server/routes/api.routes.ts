@@ -7,12 +7,16 @@ import budgetRoutes from '../modules/budgets/budget.routes';
 import savingsRoutes from '../modules/savings/savings.routes';
 import adminRoutes from '../modules/admin/admin.routes';
 
+import mongoose from 'mongoose';
+
 const apiRouter = Router();
 
 // Health Check
 apiRouter.get('/health', (_req, res) => {
+  const isAtlasConnected = mongoose.connection.readyState === 1;
   res.json({
     status: 'ok',
+    database: isAtlasConnected ? 'MongoDB Atlas (Conectado)' : 'MongoDB Atlas (Pendiente MONGODB_URI)',
     app: 'FinanAPP API',
     version: '2.0.0',
     architecture: 'Clean Architecture Modular',
