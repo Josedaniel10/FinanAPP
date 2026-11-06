@@ -1,7 +1,7 @@
-import { savingsRepository, SavingsRepository } from './savings.repository';
-import { SavingsGoal } from './savings.model';
-import { accountRepository, AccountRepository } from '../accounts/account.repository';
-import { AppError } from '../../errors/app-error';
+import { savingsRepository, SavingsRepository } from './savings.repository.js';
+import { SavingsGoal } from './savings.model.js';
+import { accountRepository, AccountRepository } from '../accounts/account.repository.js';
+import { AppError } from '../../errors/app-error.js';
 
 export interface CreateSavingsGoalDto {
   name: string;

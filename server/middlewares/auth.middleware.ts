@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
-import { AppError } from '../errors/app-error';
-import { authRepository } from '../modules/auth/auth.repository';
-import { UserWithoutPassword } from '../modules/auth/auth.types';
+import { env } from '../config/env.js';
+import { AppError } from '../errors/app-error.js';
+import { authRepository } from '../modules/auth/auth.repository.js';
+import { UserWithoutPassword } from '../modules/auth/auth.types.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: UserWithoutPassword;

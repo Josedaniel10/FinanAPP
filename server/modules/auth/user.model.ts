@@ -1,6 +1,6 @@
 import { Schema, model, Document, Model } from 'mongoose';
 import { randomUUID } from 'crypto';
-import { User, UserRole } from './auth.types';
+import { User, UserRole } from './auth.types.js';
 
 export interface UserDocument extends Omit<User, 'id'>, Document<string> {
   _id: string;

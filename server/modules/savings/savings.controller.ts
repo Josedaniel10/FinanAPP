@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { savingsService } from './savings.service';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { savingsService } from './savings.service.js';
 
 export class SavingsController {
   async getGoals(req: AuthenticatedRequest, res: Response): Promise<void> {

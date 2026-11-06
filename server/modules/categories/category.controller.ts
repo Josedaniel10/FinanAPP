@@ -1,7 +1,7 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { categoryService } from './category.service';
-import { CreateCategoryDto, UpdateCategoryDto } from './category.schema';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { categoryService } from './category.service.js';
+import { CreateCategoryDto, UpdateCategoryDto } from './category.schema.js';
 
 export class CategoryController {
   async getAll(req: AuthenticatedRequest, res: Response): Promise<void> {

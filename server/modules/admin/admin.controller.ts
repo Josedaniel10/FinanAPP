@@ -1,10 +1,10 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { authRepository } from '../auth/auth.repository';
-import { AccountModel } from '../accounts/account.model';
-import { TransactionModel } from '../transactions/transaction.model';
-import { UserModel } from '../auth/user.model';
-import { AppError } from '../../errors/app-error';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { authRepository } from '../auth/auth.repository.js';
+import { AccountModel } from '../accounts/account.model.js';
+import { TransactionModel } from '../transactions/transaction.model.js';
+import { UserModel } from '../auth/user.model.js';
+import { AppError } from '../../errors/app-error.js';
 
 export class AdminController {
   async getUsers(_req: AuthenticatedRequest, res: Response): Promise<void> {

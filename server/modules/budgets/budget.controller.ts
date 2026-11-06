@@ -1,7 +1,7 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { budgetService } from './budget.service';
-import { CreateBudgetDto, UpdateBudgetDto } from './budget.schema';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { budgetService } from './budget.service.js';
+import { CreateBudgetDto, UpdateBudgetDto } from './budget.schema.js';
 
 export class BudgetController {
   async create(req: AuthenticatedRequest, res: Response): Promise<void> {

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { authService, AuthService } from './auth.service';
-import { RegisterDto, LoginDto } from './auth.schema';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
+import { authService, AuthService } from './auth.service.js';
+import { RegisterDto, LoginDto } from './auth.schema.js';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
 
 export class AuthController {
   constructor(private readonly service: AuthService = authService) {}

@@ -1,6 +1,6 @@
-import { accountRepository, AccountRepository } from './account.repository';
-import { Account, AccountType } from './account.model';
-import { AppError } from '../../errors/app-error';
+import { accountRepository, AccountRepository } from './account.repository.js';
+import { Account, AccountType } from './account.model.js';
+import { AppError } from '../../errors/app-error.js';
 
 export interface CreateAccountDto {
   name: string;

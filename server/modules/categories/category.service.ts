@@ -1,9 +1,9 @@
-import { AppError } from '../../errors/app-error';
-import { categoryRepository, CategoryRepository } from './category.repository';
-import { CreateCategoryDto, UpdateCategoryDto } from './category.schema';
-import { Category } from './category.model';
-import { TransactionModel } from '../transactions/transaction.model';
-import { BudgetModel } from '../budgets/budget.model';
+import { AppError } from '../../errors/app-error.js';
+import { categoryRepository, CategoryRepository } from './category.repository.js';
+import { CreateCategoryDto, UpdateCategoryDto } from './category.schema.js';
+import { Category } from './category.model.js';
+import { TransactionModel } from '../transactions/transaction.model.js';
+import { BudgetModel } from '../budgets/budget.model.js';
 
 export class CategoryService {
   constructor(private readonly repo: CategoryRepository = categoryRepository) {}

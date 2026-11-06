@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { adminController } from './admin.controller';
-import { authenticateToken, requireAdmin } from '../../middlewares/auth.middleware';
+import { adminController } from './admin.controller.js';
+import { authenticateToken, requireAdmin } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 

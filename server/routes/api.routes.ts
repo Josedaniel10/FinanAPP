@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import authRoutes from '../modules/auth/auth.routes';
-import transactionRoutes from '../modules/transactions/transaction.routes';
-import categoryRoutes from '../modules/categories/category.routes';
-import accountRoutes from '../modules/accounts/account.routes';
-import budgetRoutes from '../modules/budgets/budget.routes';
-import savingsRoutes from '../modules/savings/savings.routes';
-import adminRoutes from '../modules/admin/admin.routes';
+import authRoutes from '../modules/auth/auth.routes.js';
+import transactionRoutes from '../modules/transactions/transaction.routes.js';
+import categoryRoutes from '../modules/categories/category.routes.js';
+import accountRoutes from '../modules/accounts/account.routes.js';
+import budgetRoutes from '../modules/budgets/budget.routes.js';
+import savingsRoutes from '../modules/savings/savings.routes.js';
+import adminRoutes from '../modules/admin/admin.routes.js';
 
 import mongoose from 'mongoose';
 

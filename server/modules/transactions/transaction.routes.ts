@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { transactionController } from './transaction.controller';
+import { transactionController } from './transaction.controller.js';
 import {
   createTransactionSchema,
   updateTransactionSchema,
   transactionFilterSchema,
-} from './transaction.schema';
-import { validateBody, validateQuery } from '../../middlewares/validate.middleware';
-import { authenticateToken } from '../../middlewares/auth.middleware';
+} from './transaction.schema.js';
+import { validateBody, validateQuery } from '../../middlewares/validate.middleware.js';
+import { authenticateToken } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 

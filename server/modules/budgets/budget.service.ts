@@ -1,9 +1,9 @@
-import { AppError } from '../../errors/app-error';
-import { budgetRepository, BudgetRepository } from './budget.repository';
-import { categoryRepository, CategoryRepository } from '../categories/category.repository';
-import { TransactionModel } from '../transactions/transaction.model';
-import { CreateBudgetDto, UpdateBudgetDto } from './budget.schema';
-import { Budget } from './budget.model';
+import { AppError } from '../../errors/app-error.js';
+import { budgetRepository, BudgetRepository } from './budget.repository.js';
+import { categoryRepository, CategoryRepository } from '../categories/category.repository.js';
+import { TransactionModel } from '../transactions/transaction.model.js';
+import { CreateBudgetDto, UpdateBudgetDto } from './budget.schema.js';
+import { Budget } from './budget.model.js';
 
 export type BudgetAlertStatus = 'NORMAL' | 'WARNING' | 'EXCEEDED';
 

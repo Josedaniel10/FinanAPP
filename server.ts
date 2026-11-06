@@ -2,11 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
-import { env } from './server/config/env';
-import { connectMongoDB, disconnectMongoDB } from './server/db/mongodb';
-import { runDatabaseSeed } from './server/db/seed-database';
-import apiRouter from './server/routes/api.routes';
-import { errorHandler } from './server/middlewares/error.middleware';
+import { env } from './server/config/env.js';
+import { connectMongoDB, disconnectMongoDB } from './server/db/mongodb.js';
+import { runDatabaseSeed } from './server/db/seed-database.js';
+import apiRouter from './server/routes/api.routes.js';
+import { errorHandler } from './server/middlewares/error.middleware.js';
 
 import mongoose from 'mongoose';
 

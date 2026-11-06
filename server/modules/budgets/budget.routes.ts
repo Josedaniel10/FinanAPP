@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { budgetController } from './budget.controller';
-import { authenticateToken } from '../../middlewares/auth.middleware';
-import { validateBody } from '../../middlewares/validate.middleware';
-import { createBudgetSchema, updateBudgetSchema } from './budget.schema';
+import { budgetController } from './budget.controller.js';
+import { authenticateToken } from '../../middlewares/auth.middleware.js';
+import { validateBody } from '../../middlewares/validate.middleware.js';
+import { createBudgetSchema, updateBudgetSchema } from './budget.schema.js';
 
 const budgetRoutes = Router();
 

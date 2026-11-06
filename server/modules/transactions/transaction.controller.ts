@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { transactionService, TransactionService } from './transaction.service';
-import { CreateTransactionDto, UpdateTransactionDto, TransactionFilterDto } from './transaction.schema';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { transactionService, TransactionService } from './transaction.service.js';
+import { CreateTransactionDto, UpdateTransactionDto, TransactionFilterDto } from './transaction.schema.js';
 
 export class TransactionController {
   constructor(private readonly service: TransactionService = transactionService) {}

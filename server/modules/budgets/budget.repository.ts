@@ -1,4 +1,4 @@
-import { BudgetModel, Budget, BudgetPeriod } from './budget.model';
+import { BudgetModel, Budget, BudgetPeriod } from './budget.model.js';
 
 function mapDocToBudget(doc: any): Budget {
   return {

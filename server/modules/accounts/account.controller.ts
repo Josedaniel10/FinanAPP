@@ -1,6 +1,6 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '../../middlewares/auth.middleware';
-import { accountService } from './account.service';
+import { AuthenticatedRequest } from '../../middlewares/auth.middleware.js';
+import { accountService } from './account.service.js';
 
 export class AccountController {
   async getAccounts(req: AuthenticatedRequest, res: Response): Promise<void> {

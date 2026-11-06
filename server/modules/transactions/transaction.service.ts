@@ -1,9 +1,9 @@
-import { AppError } from '../../errors/app-error';
-import { accountRepository, AccountRepository } from '../accounts/account.repository';
-import { categoryRepository, CategoryRepository } from '../categories/category.repository';
-import { transactionRepository, TransactionRepository } from './transaction.repository';
-import { CreateTransactionDto, UpdateTransactionDto, TransactionFilterDto } from './transaction.schema';
-import { Transaction } from './transaction.model';
+import { AppError } from '../../errors/app-error.js';
+import { accountRepository, AccountRepository } from '../accounts/account.repository.js';
+import { categoryRepository, CategoryRepository } from '../categories/category.repository.js';
+import { transactionRepository, TransactionRepository } from './transaction.repository.js';
+import { CreateTransactionDto, UpdateTransactionDto, TransactionFilterDto } from './transaction.schema.js';
+import { Transaction } from './transaction.model.js';
 
 export interface PopulatedTransaction extends Transaction {
   category?: {

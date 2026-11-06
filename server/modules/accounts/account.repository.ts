@@ -1,4 +1,4 @@
-import { AccountModel, Account, AccountType } from './account.model';
+import { AccountModel, Account, AccountType } from './account.model.js';
 
 function mapDocToAccount(doc: any): Account {
   return {

@@ -1,4 +1,4 @@
-import { CategoryModel, Category, CategoryType } from './category.model';
+import { CategoryModel, Category, CategoryType } from './category.model.js';
 
 function mapDocToCategory(doc: any): Category {
   return {

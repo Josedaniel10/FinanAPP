@@ -1,4 +1,4 @@
-import { SavingsGoalModel, SavingsGoal } from './savings.model';
+import { SavingsGoalModel, SavingsGoal } from './savings.model.js';
 
 function mapDocToSavingsGoal(doc: any): SavingsGoal {
   return {

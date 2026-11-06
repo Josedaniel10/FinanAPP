@@ -1,4 +1,4 @@
-import { Category } from '../modules/categories/category.model';
+import { Category } from '../modules/categories/category.model.js';
 
 export const DEFAULT_SYSTEM_CATEGORIES: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>[] = [
   // Gastos

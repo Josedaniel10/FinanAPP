@@ -2,7 +2,7 @@ import {
   TransactionModel,
   Transaction,
   TransactionType,
-} from './transaction.model';
+} from './transaction.model.js';
 
 function mapDocToTransaction(doc: any): Transaction {
   return {

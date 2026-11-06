@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { UserModel } from '../modules/auth/user.model';
-import { AccountModel } from '../modules/accounts/account.model';
-import { CategoryModel } from '../modules/categories/category.model';
-import { DEFAULT_SYSTEM_CATEGORIES } from './seed-categories';
+import { UserModel } from '../modules/auth/user.model.js';
+import { AccountModel } from '../modules/accounts/account.model.js';
+import { CategoryModel } from '../modules/categories/category.model.js';
+import { DEFAULT_SYSTEM_CATEGORIES } from './seed-categories.js';
 
 export async function runDatabaseSeed(): Promise<void> {
   // 1. Seed System Categories

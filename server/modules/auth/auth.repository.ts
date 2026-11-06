@@ -1,5 +1,5 @@
-import { UserModel } from './user.model';
-import { User, UserRole } from './auth.types';
+import { UserModel } from './user.model.js';
+import { User, UserRole } from './auth.types.js';
 
 function mapDocToUser(doc: any): User {
   return {

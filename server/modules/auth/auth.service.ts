@@ -1,11 +1,11 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { env } from '../../config/env';
-import { AppError } from '../../errors/app-error';
-import { accountRepository } from '../accounts/account.repository';
-import { authRepository, AuthRepository } from './auth.repository';
-import { RegisterDto, LoginDto } from './auth.schema';
-import { AuthSessionResponse, UserWithoutPassword } from './auth.types';
+import { env } from '../../config/env.js';
+import { AppError } from '../../errors/app-error.js';
+import { accountRepository } from '../accounts/account.repository.js';
+import { authRepository, AuthRepository } from './auth.repository.js';
+import { RegisterDto, LoginDto } from './auth.schema.js';
+import { AuthSessionResponse, UserWithoutPassword } from './auth.types.js';
 
 export class AuthService {
   constructor(private readonly repository: AuthRepository = authRepository) {}
