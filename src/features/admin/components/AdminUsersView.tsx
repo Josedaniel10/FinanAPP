@@ -3,7 +3,7 @@ import {
   useAdminUsersQuery,
   useAdminStatsQuery,
   useUnlockUserMutation,
-  useUpdateUserRoleMutation,
+  useDeleteUserMutation,
 } from '../hooks/useAdminUsersQuery';
 import { useAuth } from '../../auth/hooks/useAuth';
 import {
@@ -14,23 +14,25 @@ import {
   Search,
   CheckCircle2,
   AlertTriangle,
-  UserCheck,
   CreditCard,
   ArrowLeftRight,
+  Trash2,
+  Crown,
+  Info,
 } from 'lucide-react';
 import { DSButton, DSChip, DSCard, DSModal, DSInput } from '../../../design-system';
 import { showToast } from '../../../stores/toastStore';
 
 export const AdminUsersView: React.FC = () => {
   const { user: currentUser } = useAuth();
-  const { data: users = [], isLoading, refetch } = useAdminUsersQuery();
+  const { data: users = [], isLoading } = useAdminUsersQuery();
   const { data: stats } = useAdminStatsQuery();
   const unlockMutation = useUnlockUserMutation();
-  const roleMutation = useUpdateUserRoleMutation();
+  const deleteMutation = useDeleteUserMutation();
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'ALL' | 'LOCKED' | 'ADMIN'>('ALL');
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [userToDelete, setUserToDelete] = useState<any | null>(null);
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
@@ -58,32 +60,25 @@ export const AdminUsersView: React.FC = () => {
     }
   };
 
-  const handleToggleRole = async (userId: string, currentRole: 'ADMIN' | 'USER', email: string) => {
-    if (currentUser?.id === userId) {
-      showToast({
-        type: 'warning',
-        message: 'No puedes cambiar tu propio rol desde aquí.',
-      });
-      return;
-    }
-
-    const newRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
     try {
-      await roleMutation.mutateAsync({ userId, role: newRole });
+      await deleteMutation.mutateAsync(userToDelete.id);
       showToast({
         type: 'success',
-        message: `Rol de ${email} actualizado a ${newRole}.`,
+        message: `Usuario ${userToDelete.email} eliminado permanentemente.`,
       });
-    } catch {
+      setUserToDelete(null);
+    } catch (err: any) {
       showToast({
         type: 'error',
-        message: 'Error al actualizar el rol del usuario.',
+        message: err?.message || 'Error al eliminar el usuario.',
       });
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-4 space-y-4">
+    <div className="w-full space-y-4">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 text-emerald-700 mb-1">
@@ -96,8 +91,26 @@ export const AdminUsersView: React.FC = () => {
           Administración de Usuarios
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Control de acceso, asignación de permisos y estado de cuentas
+          Control de acceso, gestión de cuentas y depuración del sistema
         </p>
+      </div>
+
+      {/* Sole Administrator Notice Banner */}
+      <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-2xl p-4 flex items-start gap-3 shadow-2xs">
+        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <Crown className="w-5 h-5 text-amber-300" />
+        </div>
+        <div className="text-xs space-y-0.5 min-w-0">
+          <p className="font-bold text-emerald-950 flex items-center gap-1.5">
+            <span>Administrador Único del Sistema:</span>
+            <span className="font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
+              demo@finanapp.com
+            </span>
+          </p>
+          <p className="text-emerald-800/80 leading-relaxed text-[11px]">
+            Por directriz de seguridad de FinanAPP, esta es la única cuenta con privilegios de Administrador. Como admin, puedes gestionar las categorías predeterminadas globales, desbloquear cuentas y eliminar usuarios del sistema.
+          </p>
+        </div>
       </div>
 
       {/* Metric Cards Row */}
@@ -109,9 +122,12 @@ export const AdminUsersView: React.FC = () => {
           </p>
         </div>
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
-          <p className="text-[11px] font-semibold text-emerald-600">Administradores</p>
-          <p className="text-xl font-bold font-mono tabular-nums text-emerald-700 mt-1">
-            {stats?.adminCount ?? users.filter((u) => u.role === 'ADMIN').length}
+          <p className="text-[11px] font-semibold text-emerald-600">Administrador</p>
+          <p className="text-xl font-bold font-mono tabular-nums text-emerald-700 mt-1 flex items-center gap-1.5">
+            <span>1</span>
+            <span className="text-[10px] font-sans font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+              Único
+            </span>
           </p>
         </div>
         <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-2xs">
@@ -145,11 +161,11 @@ export const AdminUsersView: React.FC = () => {
           count={users.length}
         />
         <DSChip
-          label="Administradores"
+          label="Administrador"
           isActive={filter === 'ADMIN'}
           onClick={() => setFilter('ADMIN')}
-          icon={<ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
-          count={users.filter((u) => u.role === 'ADMIN').length}
+          icon={<Crown className="w-3.5 h-3.5 text-amber-500" />}
+          count={users.filter((u) => u.email === 'demo@finanapp.com').length}
         />
         <DSChip
           label="Bloqueados"
@@ -160,7 +176,7 @@ export const AdminUsersView: React.FC = () => {
         />
       </div>
 
-      {/* Mobile Touch Cards Feed */}
+      {/* User Cards Feed */}
       {isLoading ? (
         <div className="space-y-3 py-4">
           {[1, 2, 3].map((i) => (
@@ -185,80 +201,144 @@ export const AdminUsersView: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredUsers.map((u) => (
-            <div
-              key={u.id}
-              className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-              {/* Left: User Info */}
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                    u.role === 'ADMIN'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  {u.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-sm font-bold text-slate-900 truncate">{u.name}</p>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                        u.role === 'ADMIN'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {u.role}
-                    </span>
-                    {u.isLocked && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Bloqueado
-                      </span>
+          {filteredUsers.map((u) => {
+            const isSoleAdmin = u.email === 'demo@finanapp.com';
+
+            return (
+              <div
+                key={u.id}
+                className={`bg-white border rounded-2xl p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                  isSoleAdmin
+                    ? 'border-emerald-300 ring-2 ring-emerald-600/10 bg-gradient-to-r from-emerald-50/20 via-white to-white'
+                    : 'border-slate-200/80 hover:border-slate-300'
+                }`}
+              >
+                {/* Left: User Info */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs ${
+                      isSoleAdmin
+                        ? 'bg-gradient-to-tr from-emerald-600 to-teal-600 text-white'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {isSoleAdmin ? (
+                      <Crown className="w-5 h-5 text-amber-300" />
+                    ) : (
+                      u.name.charAt(0).toUpperCase()
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">{u.email}</p>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
-                    <span>{u.accountCount || 1} cuenta(s)</span>
-                    <span>·</span>
-                    <span>{u.transactionCount || 0} movimientos</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-bold text-slate-900 truncate">{u.name}</p>
+                      {isSoleAdmin ? (
+                        <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
+                          <Crown className="w-3 h-3 text-amber-300" /> Administrador Único
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                          Usuario
+                        </span>
+                      )}
+                      {u.isLocked && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> Bloqueado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 truncate mt-0.5">{u.email}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1">
+                      <span>{u.accountCount || 1} cuenta(s)</span>
+                      <span>·</span>
+                      <span>{u.transactionCount || 0} movimientos</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
+                  {u.isLocked && (
+                    <DSButton
+                      size="sm"
+                      variant="outline"
+                      className="min-h-[44px] flex-1 sm:flex-none text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                      leftIcon={<Unlock className="w-3.5 h-3.5" />}
+                      onClick={() => handleUnlock(u.id, u.email)}
+                      isLoading={unlockMutation.isPending}
+                    >
+                      Desbloquear
+                    </DSButton>
+                  )}
+
+                  {isSoleAdmin ? (
+                    <div className="px-3 py-1.5 rounded-xl bg-slate-50 text-[11px] font-medium text-slate-400 border border-slate-100 select-none">
+                      Cuenta Protegida
+                    </div>
+                  ) : (
+                    <DSButton
+                      size="sm"
+                      variant="danger"
+                      className="min-h-[44px] flex-1 sm:flex-none"
+                      leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                      onClick={() => setUserToDelete(u)}
+                    >
+                      Eliminar
+                    </DSButton>
+                  )}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              {/* Right: Actions with 48x48 Touch Area */}
-              <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 shrink-0">
-                {u.isLocked && (
-                  <DSButton
-                    size="sm"
-                    variant="outline"
-                    className="min-h-[44px] flex-1 sm:flex-none text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-                    leftIcon={<Unlock className="w-3.5 h-3.5" />}
-                    onClick={() => handleUnlock(u.id, u.email)}
-                    isLoading={unlockMutation.isPending}
-                  >
-                    Desbloquear
-                  </DSButton>
-                )}
-
-                {currentUser?.id !== u.id && (
-                  <DSButton
-                    size="sm"
-                    variant="secondary"
-                    className="min-h-[44px] flex-1 sm:flex-none"
-                    leftIcon={<UserCheck className="w-3.5 h-3.5" />}
-                    onClick={() => handleToggleRole(u.id, u.role, u.email)}
-                    isLoading={roleMutation.isPending}
-                  >
-                    {u.role === 'ADMIN' ? 'Hacer Usuario' : 'Hacer Admin'}
-                  </DSButton>
-                )}
+      {/* Delete User Confirmation Modal */}
+      {userToDelete && (
+        <DSModal
+          isOpen={Boolean(userToDelete)}
+          onClose={() => setUserToDelete(null)}
+          title="Eliminar Cuenta de Usuario"
+          maxWidth="sm"
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-rose-950 text-sm">¿Confirmas la eliminación permanente?</p>
+                <p className="mt-1 leading-relaxed text-rose-800">
+                  Esta acción es irreversible y eliminará definitivamente a{' '}
+                  <strong className="font-bold text-rose-950">{userToDelete.name}</strong> ({userToDelete.email}),
+                  así como sus{' '}
+                  <strong>{userToDelete.accountCount || 1} cuenta(s)</strong> y{' '}
+                  <strong>{userToDelete.transactionCount || 0} movimiento(s)</strong> asociados.
+                </p>
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <DSButton
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => setUserToDelete(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancelar
+              </DSButton>
+
+              <DSButton
+                type="button"
+                variant="danger"
+                size="md"
+                isLoading={deleteMutation.isPending}
+                leftIcon={<Trash2 className="w-4 h-4" />}
+                onClick={handleConfirmDelete}
+              >
+                Eliminar Permanentemente
+              </DSButton>
+            </div>
+          </div>
+        </DSModal>
       )}
     </div>
   );

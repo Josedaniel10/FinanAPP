@@ -7,6 +7,8 @@ export interface User {
   role: UserRole;
   failedLoginAttempts: number;
   lockUntil: number | null;
+  preferredCurrency?: string;
+  hasCompletedOnboarding?: boolean;
   createdAt: string;
   updatedAt: string;
 }

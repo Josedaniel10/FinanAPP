@@ -26,8 +26,10 @@ import { DSButton, DSChip, DSCard, DSModal, DSAlert } from '../../../design-syst
 import { showToast } from '../../../stores/toastStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { ACCOUNT_KEYS } from '../hooks/useAccountsQuery';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 export const AccountsView: React.FC = () => {
+  const { format, preferredCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const { data: accounts = [], isLoading } = useAccountsQuery();
   const createAccountMutation = useCreateAccountMutation();
@@ -162,11 +164,7 @@ export const AccountsView: React.FC = () => {
             Saldo Total Agregado
           </p>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-slate-900 mt-1">
-            $
-            {totalBalance.toLocaleString('es-ES', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {format(totalBalance)}
           </p>
         </div>
 
@@ -175,11 +173,7 @@ export const AccountsView: React.FC = () => {
             Bancos y Ahorro
           </p>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-blue-700 mt-1">
-            $
-            {bankAndSavingsBalance.toLocaleString('es-ES', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {format(bankAndSavingsBalance)}
           </p>
         </div>
 
@@ -188,11 +182,7 @@ export const AccountsView: React.FC = () => {
             Efectivo Líquido
           </p>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-emerald-700 mt-1">
-            $
-            {cashBalance.toLocaleString('es-ES', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {format(cashBalance)}
           </p>
         </div>
 
@@ -345,11 +335,7 @@ export const AccountsView: React.FC = () => {
                         : 'text-slate-900'
                     }`}
                   >
-                    {account.currency} $
-                    {account.balance.toLocaleString('es-ES', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {format(account.balance, account.currency, { showCode: true })}
                   </span>
                 </div>
               </div>

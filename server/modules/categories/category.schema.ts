@@ -12,6 +12,7 @@ export const createCategorySchema = z.object({
     .string()
     .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'El color debe ser un valor hexadecimal válido (ej. #10B981).')
     .default('#059669'),
+  isDefault: z.boolean().optional(),
 });
 
 export const updateCategorySchema = z.object({
@@ -27,6 +28,7 @@ export const updateCategorySchema = z.object({
     .string()
     .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'El color debe ser un valor hexadecimal válido (ej. #10B981).')
     .optional(),
+  isDefault: z.boolean().optional(),
 });
 
 export type CreateCategoryDto = z.infer<typeof createCategorySchema>;

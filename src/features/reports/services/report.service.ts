@@ -2,6 +2,7 @@ import { apiClient } from '../../../shared/lib/api-client';
 import { Transaction, FinancialSummary } from '../../transactions/types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getCurrencyInfo } from '../../../shared/constants/currencies';
 
 export interface ReportFilter {
   period: 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_3_MONTHS' | 'THIS_YEAR' | 'ALL' | 'CUSTOM';
@@ -267,8 +268,12 @@ export const reportService = {
     user: { name?: string; email?: string } | null,
     startDate: string,
     endDate: string,
-    fileNamePrefix = 'reporte_financiero'
+    fileNamePrefix = 'reporte_financiero',
+    currencyCode = 'USD'
   ): void {
+    const curr = getCurrencyInfo(currencyCode);
+    const sym = curr.symbol;
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -315,11 +320,11 @@ export const reportService = {
       startY: 42,
       head: [['Total Ingresos', 'Total Gastos', 'Ahorro Neto', 'Tasa Ahorro', 'Gasto Prom. Diario']],
       body: [[
-        `+$${analytics.totalIncome.toFixed(2)}`,
-        `-$${analytics.totalExpenses.toFixed(2)}`,
-        `$${analytics.netSavings.toFixed(2)}`,
+        `+${sym} ${analytics.totalIncome.toFixed(2)}`,
+        `-${sym} ${analytics.totalExpenses.toFixed(2)}`,
+        `${sym} ${analytics.netSavings.toFixed(2)}`,
         `${analytics.savingsRate}%`,
-        `$${analytics.dailyAverageExpense.toFixed(2)}`,
+        `${sym} ${analytics.dailyAverageExpense.toFixed(2)}`,
       ]],
       theme: 'grid',
       headStyles: {
@@ -350,7 +355,7 @@ export const reportService = {
       const catRows = analytics.categoryBreakdown.slice(0, 8).map((c) => [
         c.categoryName,
         c.count.toString(),
-        `$${c.total.toFixed(2)}`,
+        `${sym} ${c.total.toFixed(2)}`,
         `${c.percentage}%`,
       ]);
 
@@ -398,7 +403,7 @@ export const reportService = {
       typeLabels[t.type] || t.type,
       t.category?.name || 'General',
       t.account?.name || 'Cuenta',
-      `${t.type === 'INCOME' ? '+' : t.type === 'TRANSFER' ? '⇄ ' : '-'} $${t.amount.toFixed(2)}`,
+      `${t.type === 'INCOME' ? '+' : t.type === 'TRANSFER' ? '⇄ ' : '-'} ${t.account?.currency ? getCurrencyInfo(t.account.currency).symbol : sym} ${t.amount.toFixed(2)}`,
     ]);
 
     autoTable(doc, {

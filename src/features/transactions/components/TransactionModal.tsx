@@ -23,6 +23,9 @@ import { categoryService } from '../../categories/services/category.service';
 import { CreateCategoryPayload } from '../../categories/types';
 import { DSBottomSheet, DSButton, DSInput, DSSelect, DSAlert } from '../../../design-system';
 import { showToast } from '../../../stores/toastStore';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
+import { getCurrencyInfo } from '../../../shared/constants/currencies';
+import { CurrencyAmountInput } from '../../../shared/components/CurrencyAmountInput';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -45,6 +48,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   defaultType = 'EXPENSE',
   onCategoryCreated,
 }) => {
+  const { preferredCurrency } = useCurrency();
   const [localCategories, setLocalCategories] = useState<Category[]>(initialCategories);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [type, setType] = useState<TransactionType>(defaultType);
@@ -60,6 +64,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const activeCurrency = selectedAccount?.currency || preferredCurrency;
+  const activeSymbol = getCurrencyInfo(activeCurrency).symbol;
 
   useEffect(() => {
     setLocalCategories(initialCategories);
@@ -262,27 +270,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </button>
           </div>
 
-          {/* Amount Input with big numeric font */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Monto
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-              </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full min-h-[48px] pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xl font-bold tracking-tight focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-              />
-            </div>
-          </div>
+          {/* Amount Input with live currency guidance */}
+          <CurrencyAmountInput
+            label="Monto"
+            value={amount}
+            onChange={setAmount}
+            currency={activeCurrency}
+            min={0.01}
+            required
+          />
 
           {/* Description */}
           <DSInput

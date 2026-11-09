@@ -18,6 +18,7 @@ import { SavingsView } from './features/savings/components/SavingsView';
 import { ReportsView } from './features/reports/components/ReportsView';
 import { AdminUsersView } from './features/admin/components/AdminUsersView';
 import { UserProfileView } from './features/profile/components/UserProfileView';
+import { OnboardingModal } from './features/onboarding/components/OnboardingModal';
 import { DSFab, DSToastContainer } from './design-system';
 import { TransactionModal } from './features/transactions/components/TransactionModal';
 import { useAccountsQuery } from './features/accounts/hooks/useAccountsQuery';
@@ -79,8 +80,8 @@ const MainAppContent: React.FC = () => {
           {/* Clean Top Header (Breadcrumb, mobile menu button, profile avatar trigger, NO logout button) */}
           <AppHeader onOpenProfile={() => setActiveTab('profile')} />
 
-          {/* Main Content Area with fluid motion transitions */}
-          <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 pb-24 md:pb-8">
+          {/* Main Content Area with consistent global padding and bottom dock clearance */}
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-6 md:py-8 pb-32 sm:pb-36 md:pb-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -96,6 +97,7 @@ const MainAppContent: React.FC = () => {
                     onNavigateToBudgets={() => setActiveTab('budgets')}
                     onNavigateToSavings={() => setActiveTab('savings')}
                     onNavigateToReports={() => setActiveTab('reports')}
+                    onNavigateToProfile={() => setActiveTab('profile')}
                   />
                 )}
                 {activeTab === 'history' && (
@@ -118,14 +120,16 @@ const MainAppContent: React.FC = () => {
           </footer>
         </div>
 
-        {/* Floating Action Button (FAB): Mobile Only */}
-        <div className="block md:hidden">
-          <DSFab
-            onClick={() => setIsFabModalOpen(true)}
-            icon={<Plus className="w-6 h-6" />}
-            ariaLabel="Registrar nuevo movimiento"
-          />
-        </div>
+        {/* Floating Action Button (FAB): Mobile Only for secondary tabs (hidden on dashboard to match reference layout) */}
+        {activeTab !== 'dashboard' && (
+          <div className="block md:hidden">
+            <DSFab
+              onClick={() => setIsFabModalOpen(true)}
+              icon={<Plus className="w-6 h-6" />}
+              ariaLabel="Registrar nuevo movimiento"
+            />
+          </div>
+        )}
 
         {/* Quick Add Bottom Sheet / Modal Triggered by FAB on Mobile */}
         <TransactionModal
@@ -139,6 +143,9 @@ const MainAppContent: React.FC = () => {
           defaultType="EXPENSE"
           onCategoryCreated={(newCat) => setCategories((prev) => [...prev, newCat])}
         />
+
+        {/* Fast First-Time Onboarding Modal */}
+        <OnboardingModal />
 
         {/* Non-intrusive Floating Feedback Snackbars/Toasts */}
         <DSToastContainer />

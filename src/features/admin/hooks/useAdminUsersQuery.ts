@@ -41,3 +41,13 @@ export function useUpdateUserRoleMutation() {
     },
   });
 }
+
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => adminService.deleteUser(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.all });
+    },
+  });
+}

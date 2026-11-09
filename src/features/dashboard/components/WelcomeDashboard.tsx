@@ -17,6 +17,8 @@ import { TransactionModal } from '../../transactions/components/TransactionModal
 import { TransactionList } from '../../transactions/components/TransactionList';
 import { TransactionDetailModal } from '../../transactions/components/TransactionDetailModal';
 import { CategorySummaryCard } from '../../transactions/components/CategorySummaryCard';
+import { TransferModal } from '../../accounts/components/TransferModal';
+import { MobileDashboard } from './MobileDashboard';
 import {
   Wallet,
   TrendingUp,
@@ -32,6 +34,7 @@ import {
   ArrowRight,
   BarChart3,
 } from 'lucide-react';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 interface WelcomeDashboardProps {
   onNavigateToHistory?: () => void;
@@ -39,6 +42,7 @@ interface WelcomeDashboardProps {
   onNavigateToBudgets?: () => void;
   onNavigateToSavings?: () => void;
   onNavigateToReports?: () => void;
+  onNavigateToProfile?: () => void;
 }
 
 export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
@@ -47,8 +51,10 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
   onNavigateToBudgets,
   onNavigateToSavings,
   onNavigateToReports,
+  onNavigateToProfile,
 }) => {
   const { user } = useAuth();
+  const { format, preferredCurrency } = useCurrency();
 
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -67,6 +73,7 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
   // Detail Modal State
   const [detailTx, setDetailTx] = useState<Transaction | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
 
   const loadData = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setIsRefreshing(true);
@@ -154,13 +161,33 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
   const hasCriticalBudgets = exceededBudgets.length > 0 || warningBudgets.length > 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="space-y-6"
-    >
-      {/* Saludo y Botones de Acción Rápida */}
+    <>
+      {/* Mobile-Only Experience (Curved hero, action pills, clean card stack & transactions) */}
+      <div className="block md:hidden">
+        <MobileDashboard
+          summary={summary}
+          accounts={accounts}
+          transactions={transactions}
+          budgets={budgets}
+          isLoading={isLoading}
+          onDeposit={handleOpenIncomeModal}
+          onWithdraw={handleOpenExpenseModal}
+          onTransfer={() => setIsTransferModalOpen(true)}
+          onViewAllTransactions={onNavigateToHistory}
+          onSelectTransaction={handleViewDetail}
+          onNavigateToProfile={onNavigateToProfile}
+        />
+      </div>
+
+      {/* Desktop Experience (100% intact and unchanged) */}
+      <div className="hidden md:block">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="space-y-6"
+        >
+          {/* Saludo y Botones de Acción Rápida */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
@@ -267,11 +294,11 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
                 currentBalance < 0 ? 'text-rose-600' : 'text-slate-900'
               }`}
             >
-              ${currentBalance.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {format(currentBalance)}
             </span>
           </div>
           <p className="text-[11px] text-slate-400 mt-2">
-            Balance neto consolidado de todas tus cuentas
+            Balance neto consolidado
           </p>
         </div>
 
@@ -287,11 +314,11 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
           </div>
           <div className="mt-3">
             <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-emerald-600">
-              +${totalIncome.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              +{format(totalIncome)}
             </span>
           </div>
           <p className="text-[11px] text-slate-400 mt-2">
-            Entradas acumuladas del periodo activo
+            Entradas acumuladas del periodo
           </p>
         </div>
 
@@ -307,11 +334,11 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
           </div>
           <div className="mt-3">
             <span className="text-2xl sm:text-3xl font-extrabold font-mono tabular-nums text-rose-600">
-              -${totalExpenses.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              -{format(totalExpenses)}
             </span>
           </div>
           <p className="text-[11px] text-slate-400 mt-2">
-            Salidas registradas del periodo activo
+            Salidas registradas del periodo
           </p>
         </div>
       </div>
@@ -358,7 +385,7 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
                           acc.balance < 0 ? 'text-rose-600' : 'text-slate-900'
                         }`}
                       >
-                        {acc.currency} ${acc.balance.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {format(acc.balance, acc.currency, { showCode: true })}
                       </p>
                       {acc.isDefault && (
                         <span className="text-[10px] text-emerald-600 font-medium">
@@ -442,8 +469,8 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
                         />
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1 font-mono">
-                        <span>${goal.currentAmount.toFixed(2)}</span>
-                        <span>de ${goal.targetAmount.toFixed(2)}</span>
+                        <span>{format(goal.currentAmount)}</span>
+                        <span>de {format(goal.targetAmount)}</span>
                       </div>
                     </div>
                   );
@@ -484,6 +511,18 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
           isLoading={isLoading}
         />
       </div>
+        </motion.div>
+      </div>
+
+      {/* Modal para Transferencias entre Cuentas (Compartido) */}
+      <TransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => {
+          setIsTransferModalOpen(false);
+          loadData();
+        }}
+        accounts={accounts as any}
+      />
 
       {/* Modal para Ver Detalle del Movimiento */}
       <TransactionDetailModal
@@ -510,6 +549,6 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
         defaultType={modalType}
         onCategoryCreated={(newCat) => setCategories((prev) => [...prev, newCat])}
       />
-    </motion.div>
+    </>
   );
 };

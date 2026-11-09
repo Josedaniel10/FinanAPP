@@ -6,6 +6,8 @@ import { PiggyBank, Target, Calendar, DollarSign, CreditCard } from 'lucide-reac
 import { showToast } from '../../../stores/toastStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { SAVINGS_KEYS } from '../hooks/useSavingsQuery';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
+import { CurrencyAmountInput } from '../../../shared/components/CurrencyAmountInput';
 
 interface SavingGoalModalProps {
   isOpen: boolean;
@@ -27,6 +29,7 @@ export const SavingGoalModal: React.FC<SavingGoalModalProps> = ({
   onClose,
   initialGoal,
 }) => {
+  const { preferredCurrency, currencySymbol } = useCurrency();
   const queryClient = useQueryClient();
   const { data: accounts = [] } = useAccountsQuery();
 
@@ -156,46 +159,22 @@ export const SavingGoalModal: React.FC<SavingGoalModalProps> = ({
 
         {/* Target Amount & Initial Amount */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              Monto Objetivo ($)
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-600 font-mono text-sm font-bold">
-                $
-              </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full min-h-[44px] pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-              />
-            </div>
-          </div>
+          <CurrencyAmountInput
+            label="Monto Objetivo"
+            value={targetAmount}
+            onChange={setTargetAmount}
+            currency={preferredCurrency}
+            min={0.01}
+            required
+          />
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              {initialGoal ? 'Ahorro Actual ($)' : 'Aporte Inicial ($)'}
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-mono text-sm font-bold">
-                $
-              </div>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={currentAmount}
-                onChange={(e) => setCurrentAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full min-h-[44px] pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-              />
-            </div>
-          </div>
+          <CurrencyAmountInput
+            label={initialGoal ? 'Ahorro Actual' : 'Aporte Inicial'}
+            value={currentAmount}
+            onChange={setCurrentAmount}
+            currency={preferredCurrency}
+            min={0}
+          />
         </div>
 
         {/* Target Date & Linked Account */}

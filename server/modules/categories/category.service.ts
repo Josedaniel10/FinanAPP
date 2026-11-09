@@ -26,9 +26,16 @@ export class CategoryService {
     return category;
   }
 
-  async create(userId: string, dto: CreateCategoryDto): Promise<Category> {
+  async create(
+    userId: string,
+    dto: CreateCategoryDto,
+    userRole?: string
+  ): Promise<Category> {
+    const isTargetDefault = Boolean(dto.isDefault && userRole === 'ADMIN');
+    const targetUserId = isTargetDefault ? null : userId;
+
     const existingDuplicate = await this.repo.findByNameAndType(
-      userId,
+      targetUserId || userId,
       dto.name,
       dto.type
     );
@@ -42,7 +49,7 @@ export class CategoryService {
     }
 
     return this.repo.create({
-      userId,
+      userId: targetUserId,
       name: dto.name.trim(),
       type: dto.type,
       icon: dto.icon || 'Tag',
@@ -53,21 +60,24 @@ export class CategoryService {
   async update(
     id: string,
     userId: string,
-    dto: UpdateCategoryDto
+    dto: UpdateCategoryDto,
+    userRole?: string
   ): Promise<Category> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new AppError(404, 'Categoría no encontrada.');
     }
 
-    if (existing.userId === null) {
-      throw new AppError(
-        403,
-        'Las categorías predefinidas del sistema no pueden modificarse.'
-      );
-    }
+    const isAdmin = userRole === 'ADMIN';
 
-    if (existing.userId !== userId) {
+    if (existing.userId === null) {
+      if (!isAdmin) {
+        throw new AppError(
+          403,
+          'Las categorías predefinidas del sistema solo pueden ser modificadas por el Administrador.'
+        );
+      }
+    } else if (existing.userId !== userId && !isAdmin) {
       throw new AppError(404, 'Categoría no encontrada o no autorizada.');
     }
 
@@ -76,7 +86,7 @@ export class CategoryService {
 
     if (targetName !== existing.name || targetType !== existing.type) {
       const duplicate = await this.repo.findByNameAndType(
-        userId,
+        existing.userId || userId,
         targetName,
         targetType,
         id
@@ -98,20 +108,75 @@ export class CategoryService {
     return updated;
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(
+    id: string,
+    userId: string,
+    userRole?: string
+  ): Promise<{ message: string }> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new AppError(404, 'Categoría no encontrada.');
     }
 
+    const isAdmin = userRole === 'ADMIN';
+
     if (existing.userId === null) {
-      throw new AppError(
-        403,
-        'Las categorías predefinidas del sistema están protegidas y no pueden eliminarse.'
-      );
+      // System default category
+      if (isAdmin) {
+        // Global deletion by administrator for all users
+        const txCount = await TransactionModel.countDocuments({ categoryId: id });
+        if (txCount > 0) {
+          throw new AppError(
+            400,
+            `No se puede eliminar la categoría predeterminada "${existing.name}" porque tiene ${txCount} movimiento(s) asociado(s) en el sistema. Reasigna los movimientos primero.`
+          );
+        }
+
+        const budgetCount = await BudgetModel.countDocuments({ categoryId: id });
+        if (budgetCount > 0) {
+          throw new AppError(
+            400,
+            `No se puede eliminar la categoría predeterminada "${existing.name}" porque tiene ${budgetCount} presupuesto(s) activo(s) en el sistema.`
+          );
+        }
+
+        await this.repo.delete(id);
+        return {
+          message: `Categoría predeterminada "${existing.name}" eliminada globalmente para todos los usuarios.`,
+        };
+      } else {
+        // Normal user deleting default category for themselves
+        const userTxCount = await TransactionModel.countDocuments({
+          userId,
+          categoryId: id,
+        });
+        if (userTxCount > 0) {
+          throw new AppError(
+            400,
+            `No puedes eliminar la categoría "${existing.name}" de tu lista porque tienes ${userTxCount} movimiento(s) registrado(s) con ella. Reasígnalos primero.`
+          );
+        }
+
+        const userBudgetCount = await BudgetModel.countDocuments({
+          userId,
+          categoryId: id,
+        });
+        if (userBudgetCount > 0) {
+          throw new AppError(
+            400,
+            `No puedes eliminar la categoría "${existing.name}" de tu lista porque tienes un presupuesto activo asociado.`
+          );
+        }
+
+        await this.repo.excludeCategoryForUser(userId, id);
+        return {
+          message: `Categoría predeterminada "${existing.name}" eliminada de tu cuenta personal.`,
+        };
+      }
     }
 
-    if (existing.userId !== userId) {
+    // Custom user category
+    if (existing.userId !== userId && !isAdmin) {
       throw new AppError(404, 'Categoría no encontrada o no autorizada.');
     }
 
@@ -134,6 +199,24 @@ export class CategoryService {
     }
 
     await this.repo.delete(id);
+    return {
+      message: `Categoría "${existing.name}" eliminada correctamente.`,
+    };
+  }
+
+  async restore(id: string, userId: string): Promise<{ message: string }> {
+    const existing = await this.repo.findById(id);
+    if (!existing) {
+      throw new AppError(404, 'Categoría no encontrada.');
+    }
+    await this.repo.restoreCategoryForUser(userId, id);
+    return {
+      message: `Categoría predeterminada "${existing.name}" restaurada en tu cuenta personal.`,
+    };
+  }
+
+  async getExcluded(userId: string): Promise<Category[]> {
+    return this.repo.getExcludedCategoriesForUser(userId);
   }
 }
 

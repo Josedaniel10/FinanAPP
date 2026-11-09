@@ -24,10 +24,14 @@ import {
 import { DSButton, DSInput, DSCard } from '../../../design-system';
 import { showToast } from '../../../stores/toastStore';
 import { useUIStore } from '../../../stores/uiStore';
+import { POPULAR_CURRENCIES, getCurrencyInfo } from '../../../shared/constants/currencies';
+import { useQueryClient } from '@tanstack/react-query';
+import { Coins } from 'lucide-react';
 
 export const UserProfileView: React.FC = () => {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, setUser } = useAuth();
   const { setActiveTab } = useUIStore();
+  const queryClient = useQueryClient();
   const { data: accounts = [] } = useAccountsQuery();
   const { data: savingsGoals = [] } = useSavingsGoalsQuery();
 
@@ -35,11 +39,43 @@ export const UserProfileView: React.FC = () => {
   const [name, setName] = useState(user?.name || '');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
+  // Currency preference form
+  const [preferredCurrency, setPreferredCurrency] = useState(user?.preferredCurrency || 'USD');
+  const [isUpdatingCurrency, setIsUpdatingCurrency] = useState(false);
+
   // Password update form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handleUpdateCurrency = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingCurrency(true);
+    try {
+      const res = await authService.updateProfile({ preferredCurrency });
+      if (res.data?.user) {
+        setUser(res.data.user);
+      } else {
+        await refreshUser();
+      }
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      showToast({
+        type: 'success',
+        message: `Moneda principal actualizada exitosamente a ${preferredCurrency}.`,
+      });
+    } catch (err: any) {
+      showToast({
+        type: 'error',
+        message: err.message || 'Error al actualizar la moneda.',
+      });
+    } finally {
+      setIsUpdatingCurrency(false);
+    }
+  };
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +139,7 @@ export const UserProfileView: React.FC = () => {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="space-y-6 max-w-4xl mx-auto"
+      className="w-full space-y-6 max-w-4xl mx-auto"
     >
       {/* Top Breadcrumb & Navigation */}
       <div className="flex items-center justify-between">
@@ -219,6 +255,76 @@ export const UserProfileView: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Currency Preference Section */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-slate-900">
+            <Coins className="w-5 h-5 text-emerald-600" />
+            <h3 className="font-bold text-base">Moneda Principal Preferida</h3>
+          </div>
+          <span className="text-xs text-slate-500">
+            Adaptación global para formularios, balances y reportes
+          </span>
+        </div>
+        <p className="text-xs text-slate-500">
+          Elige la divisa por defecto que FinanAPP utilizará para presentar tus saldos totales,
+          crear nuevas transacciones, calcular presupuestos y generar resúmenes financieros.
+        </p>
+
+        <form onSubmit={handleUpdateCurrency} className="space-y-4 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+            {POPULAR_CURRENCIES.map((c) => {
+              const isSelected = preferredCurrency === c.code;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => setPreferredCurrency(c.code)}
+                  className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 ${
+                    isSelected
+                      ? 'border-emerald-600 bg-emerald-50/70 text-emerald-950 ring-2 ring-emerald-600/20 font-bold shadow-2xs'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700'
+                  }`}
+                >
+                  <span className="text-2xl" role="img" aria-label={c.name}>
+                    {c.flag}
+                  </span>
+                  <div className="text-xs leading-tight">
+                    <span className="font-black">{c.code}</span>
+                    <span className="text-slate-400 font-mono text-[11px] block">
+                      {c.symbol}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100">
+            <div className="text-xs text-slate-500 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>
+                Moneda seleccionada:{' '}
+                <strong className="text-slate-800 font-bold">
+                  {getCurrencyInfo(preferredCurrency).name} ({getCurrencyInfo(preferredCurrency).code} -{' '}
+                  {getCurrencyInfo(preferredCurrency).symbol})
+                </strong>
+              </span>
+            </div>
+
+            <DSButton
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isUpdatingCurrency}
+              leftIcon={<Save className="w-4 h-4" />}
+            >
+              Guardar Moneda Preferida
+            </DSButton>
+          </div>
+        </form>
       </div>
 
       {/* Account Settings Forms Grid */}

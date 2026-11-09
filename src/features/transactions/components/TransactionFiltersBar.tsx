@@ -97,10 +97,12 @@ export const TransactionFiltersBar: React.FC<TransactionFiltersBarProps> = ({
     }
   };
 
+  const [isMobileExpanded, setIsMobileExpanded] = React.useState(false);
+
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-4">
       {/* Top row: Search input & Type pills & Reset */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -121,11 +123,11 @@ export const TransactionFiltersBar: React.FC<TransactionFiltersBarProps> = ({
         </div>
 
         {/* Type pills: Todos / Gastos / Ingresos */}
-        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0">
+        <div className="flex items-center justify-between sm:justify-start gap-1 bg-slate-100 p-1 rounded-xl shrink-0">
           <button
             type="button"
             onClick={() => handleTypeChange(undefined)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               !filters.type
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
@@ -136,7 +138,7 @@ export const TransactionFiltersBar: React.FC<TransactionFiltersBarProps> = ({
           <button
             type="button"
             onClick={() => handleTypeChange('EXPENSE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
               filters.type === 'EXPENSE'
                 ? 'bg-white text-rose-600 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
@@ -148,7 +150,7 @@ export const TransactionFiltersBar: React.FC<TransactionFiltersBarProps> = ({
           <button
             type="button"
             onClick={() => handleTypeChange('INCOME')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+            className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1 ${
               filters.type === 'INCOME'
                 ? 'bg-white text-emerald-600 shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
@@ -164,17 +166,36 @@ export const TransactionFiltersBar: React.FC<TransactionFiltersBarProps> = ({
           <button
             type="button"
             onClick={onReset}
-            className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+            className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             title="Restablecer todos los filtros"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Limpiar filtros ({activeFiltersCount})</span>
+            <span>Limpiar ({activeFiltersCount})</span>
           </button>
         )}
       </div>
 
-      {/* Second row: Dropdowns for Category, Account and Date Range */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Mobile Toggle Button for Advanced Slicers */}
+      <div className="flex md:hidden items-center justify-between pt-1">
+        <button
+          type="button"
+          onClick={() => setIsMobileExpanded(!isMobileExpanded)}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 transition-colors py-1 cursor-pointer"
+        >
+          <Filter className="w-3.5 h-3.5 text-emerald-600" />
+          <span>{isMobileExpanded ? 'Ocultar filtros avanzados' : 'Filtros avanzados (categoría, cuenta, fechas)'}</span>
+          {activeFiltersCount > 0 && (
+            <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold flex items-center justify-center">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Collapsible Advanced Filters Section */}
+      <div className={`${isMobileExpanded ? 'block' : 'hidden'} md:block space-y-4 pt-2 border-t md:border-t-0 border-slate-100`}>
+        {/* Dropdowns for Category, Account and Date Range */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* Categoría */}
         <div>
           <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
@@ -312,5 +333,6 @@ export const TransactionFiltersBar: React.FC<TransactionFiltersBarProps> = ({
         )}
       </div>
     </div>
+  </div>
   );
 };

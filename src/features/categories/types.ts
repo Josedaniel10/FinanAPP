@@ -17,6 +17,7 @@ export interface CreateCategoryPayload {
   type: CategoryType;
   icon?: string;
   color?: string;
+  isDefault?: boolean;
 }
 
 export interface UpdateCategoryPayload {
@@ -24,4 +25,5 @@ export interface UpdateCategoryPayload {
   type?: CategoryType;
   icon?: string;
   color?: string;
+  isDefault?: boolean;
 }

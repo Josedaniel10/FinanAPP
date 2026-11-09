@@ -8,6 +8,9 @@ export interface User {
   role: UserRole;
   failedLoginAttempts: number;
   lockUntil: number | null; // Timestamp until which account is locked
+  preferredCurrency: string;
+  hasCompletedOnboarding: boolean;
+  excludedCategoryIds?: string[];
   createdAt: string;
   updatedAt: string;
 }

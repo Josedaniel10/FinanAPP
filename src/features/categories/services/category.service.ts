@@ -34,4 +34,14 @@ export const categoryService = {
       method: 'DELETE',
     });
   },
+
+  async getExcludedCategories(): Promise<{ data: Category[] }> {
+    return apiClient<{ data: Category[] }>('/categories/excluded');
+  },
+
+  async restoreCategory(id: string): Promise<{ message: string }> {
+    return apiClient<{ message: string }>(`/categories/${id}/restore`, {
+      method: 'POST',
+    });
+  },
 };

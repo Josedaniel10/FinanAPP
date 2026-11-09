@@ -43,11 +43,28 @@ export class AuthController {
 
   updateProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { name } = req.body;
-      const user = await this.service.updateProfile(req.user!.id, name);
+      const { name, preferredCurrency } = req.body;
+      const user = await this.service.updateProfile(req.user!.id, { name, preferredCurrency });
       res.status(200).json({
         data: { user },
         message: 'Perfil actualizado exitosamente',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  completeOnboarding = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { preferredCurrency, initialBalance, accountName } = req.body;
+      const user = await this.service.completeOnboarding(req.user!.id, {
+        preferredCurrency,
+        initialBalance: typeof initialBalance === 'number' ? initialBalance : undefined,
+        accountName,
+      });
+      res.status(200).json({
+        data: { user },
+        message: 'Configuración inicial completada exitosamente',
       });
     } catch (error) {
       next(error);

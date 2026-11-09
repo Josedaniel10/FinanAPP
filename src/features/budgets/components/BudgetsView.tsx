@@ -16,8 +16,10 @@ import { budgetService } from '../services/budget.service';
 import { BudgetCard } from './BudgetCard';
 import { BudgetModal } from './BudgetModal';
 import { BudgetDetailModal } from './BudgetDetailModal';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 export const BudgetsView: React.FC = () => {
+  const { format, preferredCurrency } = useCurrency();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [summary, setSummary] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ export const BudgetsView: React.FC = () => {
   }, [budgets, filterTab, searchTerm]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -195,7 +197,7 @@ export const BudgetsView: React.FC = () => {
               </div>
             </div>
             <p className="text-xl font-extrabold text-slate-900 mt-2">
-              ${summary.totalLimit.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+              {format(summary.totalLimit)}
             </p>
             <p className="text-[11px] text-slate-400 mt-1">
               En {summary.budgetsCount} categorías planificadas
@@ -212,7 +214,7 @@ export const BudgetsView: React.FC = () => {
               </div>
             </div>
             <p className="text-xl font-extrabold text-rose-600 mt-2">
-              ${summary.totalSpent.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+              {format(summary.totalSpent)}
             </p>
             <p className="text-[11px] text-slate-400 mt-1">
               {summary.overallPercentage}% del total presupuestado
@@ -229,7 +231,7 @@ export const BudgetsView: React.FC = () => {
               </div>
             </div>
             <p className="text-xl font-extrabold text-emerald-700 mt-2">
-              ${summary.totalRemaining.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+              {format(summary.totalRemaining)}
             </p>
             <p className="text-[11px] text-slate-400 mt-1">
               Margen disponible total

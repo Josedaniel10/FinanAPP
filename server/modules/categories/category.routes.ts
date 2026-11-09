@@ -17,6 +17,14 @@ router.post('/', validateBody(createCategorySchema), (req, res, next) => {
   categoryController.create(req, res).catch(next);
 });
 
+router.get('/excluded', (req, res, next) => {
+  categoryController.getExcluded(req, res).catch(next);
+});
+
+router.post('/:id/restore', (req, res, next) => {
+  categoryController.restore(req, res).catch(next);
+});
+
 router.get('/:id', (req, res, next) => {
   categoryController.getById(req, res).catch(next);
 });

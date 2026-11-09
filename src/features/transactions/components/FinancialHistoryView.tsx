@@ -27,12 +27,14 @@ import {
   MinusCircle,
   Scale,
 } from 'lucide-react';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 interface FinancialHistoryViewProps {
   onNavigateToDashboard?: () => void;
 }
 
 export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
+  const { format, preferredCurrency } = useCurrency();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -192,7 +194,7 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -250,10 +252,7 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
           </span>
           <div className="mt-2">
             <span className="text-2xl font-extrabold text-emerald-600">
-              +${filteredMetrics.incomeSum.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              +{format(filteredMetrics.incomeSum)}
             </span>
           </div>
         </div>
@@ -264,10 +263,7 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
           </span>
           <div className="mt-2">
             <span className="text-2xl font-extrabold text-rose-600">
-              -${filteredMetrics.expenseSum.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              -{format(filteredMetrics.expenseSum)}
             </span>
           </div>
         </div>
@@ -283,11 +279,7 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
                 filteredMetrics.net >= 0 ? 'text-emerald-600' : 'text-rose-600'
               }`}
             >
-              {filteredMetrics.net >= 0 ? '+' : '-'}$
-              {Math.abs(filteredMetrics.net).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {filteredMetrics.net >= 0 ? '+' : '-'}{format(Math.abs(filteredMetrics.net))}
             </span>
           </div>
         </div>
@@ -368,171 +360,263 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-4">Fecha</th>
-                  <th className="py-3 px-4">Tipo</th>
-                  <th className="py-3 px-4">Descripción</th>
-                  <th className="py-3 px-4">Categoría</th>
-                  <th className="py-3 px-4">Cuenta</th>
-                  <th className="py-3 px-4 text-right">Monto</th>
-                  <th className="py-3 px-4 text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {transactions.map((tx) => {
-                  const isIncome = tx.type === 'INCOME';
-                  const pmLabel = formatPaymentMethod(tx.paymentMethod);
-                  const recLabel = formatRecurrence(tx.recurrence);
+          <>
+            {/* MOBILE VIEW (md:hidden): Touch-Friendly Transaction Cards */}
+            <div className="block md:hidden divide-y divide-slate-100">
+              {transactions.map((tx) => {
+                const isIncome = tx.type === 'INCOME';
+                const isTransfer = tx.type === 'TRANSFER';
+                const pmLabel = formatPaymentMethod(tx.paymentMethod);
+                const recLabel = formatRecurrence(tx.recurrence);
 
-                  return (
-                    <tr
-                      key={tx.id}
-                      className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                return (
+                  <div
+                    key={tx.id}
+                    className="p-3.5 hover:bg-slate-50 transition-colors active:bg-slate-100/70"
+                  >
+                    <div
+                      className="flex items-start justify-between gap-3 cursor-pointer"
                       onClick={() => handleOpenDetail(tx)}
                     >
-                      {/* Fecha */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{tx.date}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0 shadow-2xs"
+                          style={{
+                            backgroundColor:
+                              tx.category?.color ||
+                              (isIncome ? '#059669' : isTransfer ? '#0D9488' : '#E11D48'),
+                          }}
+                        >
+                          {tx.category?.name ? tx.category.name.charAt(0).toUpperCase() : (isIncome ? '+' : '-')}
                         </div>
-                      </td>
 
-                      {/* Tipo */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <div
-                            className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                              isIncome
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-rose-100 text-rose-700'
-                            }`}
-                          >
-                            {isIncome ? (
-                              <TrendingUp className="w-3.5 h-3.5" />
-                            ) : (
-                              <TrendingDown className="w-3.5 h-3.5" />
-                            )}
-                          </div>
-                          <span
-                            className={`font-semibold ${
-                              isIncome ? 'text-emerald-700' : 'text-rose-700'
-                            }`}
-                          >
-                            {isIncome ? 'Ingreso' : 'Gasto'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Descripción & Notas */}
-                      <td className="py-3.5 px-4">
-                        <div className="max-w-xs sm:max-w-sm truncate">
-                          <p className="font-semibold text-slate-900 truncate">
-                            {tx.description}
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 truncate leading-tight">
+                            {tx.description || tx.category?.name || (isIncome ? 'Ingreso' : 'Gasto')}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {isIncome && recLabel && (
-                              <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">
-                                {recLabel}
-                              </span>
-                            )}
-                            {!isIncome && pmLabel && (
-                              <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
-                                {pmLabel}
-                              </span>
-                            )}
-                            {tx.notes && (
-                              <span className="text-[10px] text-slate-400 italic truncate">
-                                "{tx.notes}"
-                              </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                            <span>{tx.date}</span>
+                            <span>·</span>
+                            <span>{tx.account?.name || 'Principal'}</span>
+                            {tx.category?.name && (
+                              <>
+                                <span>·</span>
+                                <span className="font-medium text-slate-600 truncate">{tx.category.name}</span>
+                              </>
                             )}
                           </div>
                         </div>
-                      </td>
+                      </div>
 
-                      {/* Categoría */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        {tx.category ? (
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{
-                                backgroundColor: tx.category.color || '#6B7280',
-                              }}
-                            />
-                            <span className="font-medium text-slate-700">
-                              {tx.category.name}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
-                      </td>
-
-                      {/* Cuenta */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-slate-600">
-                        <div className="flex items-center gap-1.5">
-                          <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{tx.account?.name || 'Principal'}</span>
-                        </div>
-                      </td>
-
-                      {/* Monto */}
-                      <td className="py-3.5 px-4 whitespace-nowrap text-right">
+                      <div className="text-right shrink-0">
                         <span
-                          className={`text-sm font-bold ${
-                            isIncome ? 'text-emerald-600' : 'text-rose-600'
+                          className={`text-xs sm:text-sm font-bold font-mono tabular-nums block ${
+                            isIncome ? 'text-emerald-600' : isTransfer ? 'text-teal-700' : 'text-slate-900'
                           }`}
                         >
-                          {isIncome ? '+' : '-'}$
-                          {tx.amount.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {isIncome ? '+' : isTransfer ? '' : '-'}{format(tx.amount, tx.account?.currency || preferredCurrency)}
                         </span>
-                        <span className="text-[10px] text-slate-400 block">
-                          {tx.account?.currency || 'USD'}
+                        <span className="text-[10px] text-slate-400 font-semibold block">
+                          {tx.account?.currency || preferredCurrency}
                         </span>
-                      </td>
+                      </div>
+                    </div>
 
-                      {/* Acciones */}
-                      <td
-                        className="py-3.5 px-4 whitespace-nowrap text-center"
-                        onClick={(e) => e.stopPropagation()}
+                    {/* Mobile Quick Action Buttons Bar */}
+                    <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-slate-50">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenDetail(tx)}
+                        className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleOpenDetail(tx)}
-                            title="Ver detalle del movimiento"
-                            className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Detalle</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(tx)}
+                        className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Editar</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(tx.id)}
+                        className="px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP VIEW (hidden md:block): Complete Detailed Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="py-3 px-4">Fecha</th>
+                    <th className="py-3 px-4">Tipo</th>
+                    <th className="py-3 px-4">Descripción</th>
+                    <th className="py-3 px-4">Categoría</th>
+                    <th className="py-3 px-4">Cuenta</th>
+                    <th className="py-3 px-4 text-right">Monto</th>
+                    <th className="py-3 px-4 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {transactions.map((tx) => {
+                    const isIncome = tx.type === 'INCOME';
+                    const pmLabel = formatPaymentMethod(tx.paymentMethod);
+                    const recLabel = formatRecurrence(tx.recurrence);
+
+                    return (
+                      <tr
+                        key={tx.id}
+                        className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                        onClick={() => handleOpenDetail(tx)}
+                      >
+                        {/* Fecha */}
+                        <td className="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{tx.date}</span>
+                          </div>
+                        </td>
+
+                        {/* Tipo */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <div
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center ${
+                                isIncome
+                                  ? 'bg-emerald-100 text-emerald-700'
+                                  : 'bg-rose-100 text-rose-700'
+                              }`}
+                            >
+                              {isIncome ? (
+                                <TrendingUp className="w-3.5 h-3.5" />
+                              ) : (
+                                <TrendingDown className="w-3.5 h-3.5" />
+                              )}
+                            </div>
+                            <span
+                              className={`font-semibold ${
+                                isIncome ? 'text-emerald-700' : 'text-rose-700'
+                              }`}
+                            >
+                              {isIncome ? 'Ingreso' : 'Gasto'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Descripción & Notas */}
+                        <td className="py-3.5 px-4">
+                          <div className="max-w-xs sm:max-w-sm truncate">
+                            <p className="font-semibold text-slate-900 truncate">
+                              {tx.description}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {isIncome && recLabel && (
+                                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded font-medium">
+                                  {recLabel}
+                                </span>
+                              )}
+                              {!isIncome && pmLabel && (
+                                <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">
+                                  {pmLabel}
+                                </span>
+                              )}
+                              {tx.notes && (
+                                <span className="text-[10px] text-slate-400 italic truncate">
+                                  "{tx.notes}"
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Categoría */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {tx.category ? (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{
+                                  backgroundColor: tx.category.color || '#6B7280',
+                                }}
+                              />
+                              <span className="font-medium text-slate-700">
+                                {tx.category.name}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+
+                        {/* Cuenta */}
+                        <td className="py-3.5 px-4 whitespace-nowrap text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{tx.account?.name || 'Principal'}</span>
+                          </div>
+                        </td>
+
+                        {/* Monto */}
+                        <td className="py-3.5 px-4 whitespace-nowrap text-right">
+                          <span
+                            className={`text-sm font-bold ${
+                              isIncome ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleOpenEdit(tx)}
-                            title="Editar movimiento"
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(tx.id)}
-                            title="Eliminar movimiento"
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            {isIncome ? '+' : '-'}{format(tx.amount, tx.account?.currency || preferredCurrency)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block font-semibold">
+                            {tx.account?.currency || preferredCurrency}
+                          </span>
+                        </td>
+
+                        {/* Acciones */}
+                        <td
+                          className="py-3.5 px-4 whitespace-nowrap text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleOpenDetail(tx)}
+                              title="Ver detalle del movimiento"
+                              className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleOpenEdit(tx)}
+                              title="Editar movimiento"
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(tx.id)}
+                              title="Eliminar movimiento"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

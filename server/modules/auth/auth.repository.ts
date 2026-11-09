@@ -10,6 +10,8 @@ function mapDocToUser(doc: any): User {
     role: (doc.role as UserRole) || 'USER',
     failedLoginAttempts: doc.failedLoginAttempts ?? 0,
     lockUntil: doc.lockUntil ?? null,
+    preferredCurrency: doc.preferredCurrency || 'USD',
+    hasCompletedOnboarding: Boolean(doc.hasCompletedOnboarding),
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
   };
@@ -38,12 +40,16 @@ export class AuthRepository {
     email: string;
     passwordHash: string;
     role?: UserRole;
+    preferredCurrency?: string;
+    hasCompletedOnboarding?: boolean;
   }): Promise<User> {
     const created = await UserModel.create({
       name: userData.name.trim(),
       email: userData.email.trim().toLowerCase(),
       passwordHash: userData.passwordHash,
       role: userData.role || 'USER',
+      preferredCurrency: userData.preferredCurrency || 'USD',
+      hasCompletedOnboarding: Boolean(userData.hasCompletedOnboarding),
       failedLoginAttempts: 0,
       lockUntil: null,
     });

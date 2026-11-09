@@ -4,24 +4,16 @@ import { DSBottomSheet, DSButton, DSInput, DSSelect, DSAlert } from '../../../de
 import { CreditCard, DollarSign, Tag, Check, Star } from 'lucide-react';
 import { showToast } from '../../../stores/toastStore';
 
+import { useCurrency } from '../../../shared/hooks/useCurrency';
+import { POPULAR_CURRENCIES, getCurrencyInfo } from '../../../shared/constants/currencies';
+import { CurrencyAmountInput } from '../../../shared/components/CurrencyAmountInput';
+
 interface AccountModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (dto: CreateAccountDto, accountId?: string) => Promise<void>;
   initialAccount?: Account | null;
 }
-
-export const SUPPORTED_CURRENCIES = [
-  { code: 'USD', symbol: '$', name: 'USD - Dólar Estadounidense' },
-  { code: 'EUR', symbol: '€', name: 'EUR - Euro' },
-  { code: 'COP', symbol: '$', name: 'COP - Peso Colombiano' },
-  { code: 'MXN', symbol: '$', name: 'MXN - Peso Mexicano' },
-  { code: 'GBP', symbol: '£', name: 'GBP - Libra Esterlina' },
-  { code: 'PEN', symbol: 'S/.', name: 'PEN - Sol Peruano' },
-  { code: 'ARS', symbol: '$', name: 'ARS - Peso Argentino' },
-  { code: 'CLP', symbol: '$', name: 'CLP - Peso Chileno' },
-  { code: 'BRL', symbol: 'R$', name: 'BRL - Real Brasileño' },
-];
 
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   CASH: 'Efectivo / Billetera',
@@ -38,9 +30,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   onSave,
   initialAccount,
 }) => {
+  const { preferredCurrency } = useCurrency();
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('CASH');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState(preferredCurrency);
   const [balance, setBalance] = useState('0.00');
   const [isDefault, setIsDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,18 +43,18 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     if (initialAccount) {
       setName(initialAccount.name);
       setType(initialAccount.type);
-      setCurrency(initialAccount.currency || 'USD');
+      setCurrency(initialAccount.currency || preferredCurrency);
       setBalance(String(initialAccount.balance));
       setIsDefault(Boolean(initialAccount.isDefault));
     } else {
       setName('');
       setType('CASH');
-      setCurrency('USD');
+      setCurrency(preferredCurrency);
       setBalance('0.00');
       setIsDefault(false);
     }
     setError(null);
-  }, [initialAccount, isOpen]);
+  }, [initialAccount, isOpen, preferredCurrency]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,32 +163,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
           >
-            {SUPPORTED_CURRENCIES.map((curr) => (
+            {POPULAR_CURRENCIES.map((curr) => (
               <option key={curr.code} value={curr.code}>
-                {curr.name} ({curr.symbol})
+                {curr.flag} {curr.code} - {curr.name} ({curr.symbol})
               </option>
             ))}
           </DSSelect>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-              {initialAccount ? 'Saldo Actual' : 'Saldo Inicial'}
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-mono text-sm font-bold">
-                $
-              </div>
-              <input
-                type="number"
-                step="0.01"
-                required
-                value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                placeholder="0.00"
-                className="w-full min-h-[44px] pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-base font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-              />
-            </div>
-          </div>
+          <CurrencyAmountInput
+            label={initialAccount ? 'Saldo Actual' : 'Saldo Inicial'}
+            value={balance}
+            onChange={setBalance}
+            currency={currency}
+            required
+          />
         </div>
 
         {/* Default Account Checkbox with 48x48 touch hit target */}

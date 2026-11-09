@@ -23,9 +23,11 @@ import {
   Gift,
   Fuel,
   Coffee,
+  Crown,
   LucideIcon,
 } from 'lucide-react';
 import { Category, CategoryType, CreateCategoryPayload } from '../types';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -80,10 +82,14 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   initialCategory,
   defaultType = 'EXPENSE',
 }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [name, setName] = useState('');
   const [type, setType] = useState<CategoryType>(defaultType);
   const [color, setColor] = useState('#059669');
   const [icon, setIcon] = useState('Tag');
+  const [isDefault, setIsDefault] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -95,11 +101,13 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         setType(initialCategory.type);
         setColor(initialCategory.color || '#059669');
         setIcon(initialCategory.icon || 'Tag');
+        setIsDefault(initialCategory.userId === null);
       } else {
         setName('');
         setType(defaultType);
         setColor(defaultType === 'INCOME' ? '#059669' : '#DC2626');
         setIcon('Tag');
+        setIsDefault(false);
       }
     }
   }, [isOpen, initialCategory, defaultType]);
@@ -128,6 +136,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
         type,
         color,
         icon,
+        isDefault: isAdmin ? isDefault : undefined,
       });
       onClose();
     } catch (err: any) {
@@ -284,6 +293,34 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               })}
             </div>
           </div>
+
+          {/* Admin Global Default Toggle */}
+          {isAdmin && (
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Crown className="w-4 h-4 text-amber-300" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-emerald-950 truncate">
+                    Categoría Predeterminada Global
+                  </p>
+                  <p className="text-[10px] text-emerald-800/80">
+                    Visible para todos los usuarios de FinanAPP.
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={isDefault}
+                  onChange={(e) => setIsDefault(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">

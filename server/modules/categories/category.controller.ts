@@ -27,21 +27,25 @@ export class CategoryController {
 
   async create(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user!.id;
+    const userRole = req.user?.role;
     const dto = req.body as CreateCategoryDto;
-    const category = await categoryService.create(userId, dto);
+    const category = await categoryService.create(userId, dto, userRole);
 
     res.status(201).json({
       success: true,
-      message: 'Categoría creada exitosamente.',
+      message: dto.isDefault && userRole === 'ADMIN'
+        ? 'Categoría predeterminada global creada exitosamente.'
+        : 'Categoría creada exitosamente.',
       data: category,
     });
   }
 
   async update(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user!.id;
+    const userRole = req.user?.role;
     const { id } = req.params;
     const dto = req.body as UpdateCategoryDto;
-    const category = await categoryService.update(id, userId, dto);
+    const category = await categoryService.update(id, userId, dto, userRole);
 
     res.status(200).json({
       success: true,
@@ -52,12 +56,34 @@ export class CategoryController {
 
   async delete(req: AuthenticatedRequest, res: Response): Promise<void> {
     const userId = req.user!.id;
+    const userRole = req.user?.role;
     const { id } = req.params;
-    await categoryService.delete(id, userId);
+    const result = await categoryService.delete(id, userId, userRole);
 
     res.status(200).json({
       success: true,
-      message: 'Categoría eliminada exitosamente.',
+      message: result.message,
+    });
+  }
+
+  async restore(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const result = await categoryService.restore(id, userId);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  }
+
+  async getExcluded(req: AuthenticatedRequest, res: Response): Promise<void> {
+    const userId = req.user!.id;
+    const excluded = await categoryService.getExcluded(userId);
+
+    res.status(200).json({
+      success: true,
+      data: excluded,
     });
   }
 }

@@ -9,6 +9,7 @@ import {
   ListFilter,
 } from 'lucide-react';
 import { Budget } from '../types';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 interface BudgetCardProps {
   budget: Budget;
@@ -23,6 +24,7 @@ export const BudgetCard: React.FC<BudgetCardProps> = ({
   onDelete,
   onViewDetails,
 }) => {
+  const { format } = useCurrency();
   const {
     category,
     limitAmount,
@@ -134,9 +136,9 @@ export const BudgetCard: React.FC<BudgetCardProps> = ({
         <div className="flex items-baseline justify-between text-xs">
           <span className="font-semibold text-slate-600">Gastado:</span>
           <span className="font-bold text-slate-900 text-sm">
-            ${spent.toLocaleString('es-ES', { minimumFractionDigits: 2 })}{' '}
+            {format(spent)}{' '}
             <span className="text-xs text-slate-400 font-normal">
-              de ${limitAmount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+              de {format(limitAmount)}
             </span>
           </span>
         </div>
@@ -163,12 +165,8 @@ export const BudgetCard: React.FC<BudgetCardProps> = ({
             }`}
           >
             {remaining < 0
-              ? `Excedido por $${Math.abs(remaining).toLocaleString('es-ES', {
-                  minimumFractionDigits: 2,
-                })}`
-              : `Disponible: $${remaining.toLocaleString('es-ES', {
-                  minimumFractionDigits: 2,
-                })}`}
+              ? `Excedido por ${format(Math.abs(remaining))}`
+              : `Disponible: ${format(remaining)}`}
           </span>
         </div>
       </div>

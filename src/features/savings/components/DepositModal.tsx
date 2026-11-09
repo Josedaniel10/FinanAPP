@@ -5,6 +5,8 @@ import { useContributeSavingsGoalMutation } from '../hooks/useSavingsQuery';
 import { DSBottomSheet, DSButton, DSInput, DSSelect, DSAlert } from '../../../design-system';
 import { PiggyBank, DollarSign, CreditCard, Sparkles, Check } from 'lucide-react';
 import { showToast } from '../../../stores/toastStore';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
+import { CurrencyAmountInput } from '../../../shared/components/CurrencyAmountInput';
 
 interface DepositModalProps {
   isOpen: boolean;
@@ -17,6 +19,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
   onClose,
   goal,
 }) => {
+  const { format, preferredCurrency, currencySymbol } = useCurrency();
   const { data: accounts = [] } = useAccountsQuery();
   const contributeMutation = useContributeSavingsGoalMutation();
 
@@ -125,8 +128,8 @@ export const DepositModal: React.FC<DepositModalProps> = ({
         {/* Current Goal Progress Card */}
         <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Objetivo: ${goal.targetAmount.toFixed(2)}</span>
-            <span className="font-semibold text-slate-700">Faltan: ${remainingBefore.toFixed(2)}</span>
+            <span>Objetivo: {format(goal.targetAmount)}</span>
+            <span className="font-semibold text-slate-700">Faltan: {format(remainingBefore)}</span>
           </div>
 
           <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden my-2">
@@ -138,33 +141,21 @@ export const DepositModal: React.FC<DepositModalProps> = ({
 
           <div className="flex items-center justify-between text-xs">
             <span className="font-mono font-bold text-slate-900">
-              ${goal.currentAmount.toFixed(2)} acumulados
+              {format(goal.currentAmount)} acumulados
             </span>
             <span className="font-bold text-emerald-700">{percentBefore}% completado</span>
           </div>
         </div>
 
-        {/* Deposit Amount Input */}
-        <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-            Monto a Aportar ($)
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-600 font-mono text-sm font-bold">
-              $
-            </div>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              required
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full min-h-[48px] pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-            />
-          </div>
-        </div>
+        {/* Deposit Amount Input with live currency guidance */}
+        <CurrencyAmountInput
+          label="Monto a Aportar"
+          value={amount}
+          onChange={setAmount}
+          currency={preferredCurrency}
+          min={0.01}
+          required
+        />
 
         {/* Option to deduct from an account */}
         <div className="space-y-2">
@@ -214,7 +205,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({
             </div>
             <p className="text-emerald-800">
               Tu ahorro aumentará a{' '}
-              <strong className="font-mono">${newCurrentAmount.toFixed(2)}</strong> ({percentAfter}
+              <strong className="font-mono">{format(newCurrentAmount)}</strong> ({percentAfter}
               % del objetivo).
             </p>
             {remainingAfter === 0 && (

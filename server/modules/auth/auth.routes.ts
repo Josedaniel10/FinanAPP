@@ -10,6 +10,7 @@ router.post('/register', validateBody(registerSchema), authController.register);
 router.post('/login', validateBody(loginSchema), authController.login);
 router.get('/me', authenticateToken, authController.me);
 router.put('/profile', authenticateToken, authController.updateProfile);
+router.post('/onboarding', authenticateToken, authController.completeOnboarding);
 router.put('/password', authenticateToken, authController.changePassword);
 
 export default router;

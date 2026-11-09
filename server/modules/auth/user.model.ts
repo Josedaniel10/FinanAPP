@@ -42,6 +42,20 @@ const userSchema = new Schema<UserDocument>(
       type: Number,
       default: null,
     },
+    preferredCurrency: {
+      type: String,
+      default: 'USD',
+      trim: true,
+      uppercase: true,
+    },
+    hasCompletedOnboarding: {
+      type: Boolean,
+      default: false,
+    },
+    excludedCategoryIds: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

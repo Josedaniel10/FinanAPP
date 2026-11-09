@@ -26,9 +26,11 @@ import {
 } from 'lucide-react';
 import { DSButton, DSChip, DSInput } from '../../../design-system';
 import { showToast } from '../../../stores/toastStore';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 export const ReportsView: React.FC = () => {
   const { user } = useAuth();
+  const { format, preferredCurrency } = useCurrency();
   const { data: accounts = [] } = useAccountsQuery();
 
   // Period state
@@ -170,7 +172,8 @@ export const ReportsView: React.FC = () => {
         user,
         dateRange.startDate,
         dateRange.endDate,
-        `reporte_financiero_${period.toLowerCase()}`
+        `reporte_financiero_${period.toLowerCase()}`,
+        preferredCurrency
       );
       showToast({ type: 'success', message: 'Reporte PDF generado y descargado con éxito.' });
     } catch (err) {
@@ -242,9 +245,14 @@ export const ReportsView: React.FC = () => {
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
             Periodo de Análisis
           </span>
-          <span className="text-xs text-slate-400 font-mono">
-            {dateRange.startDate} al {dateRange.endDate}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-mono">
+              {dateRange.startDate} al {dateRange.endDate}
+            </span>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+              {preferredCurrency}
+            </span>
+          </div>
         </div>
 
         {/* Period Chips */}
@@ -399,7 +407,7 @@ export const ReportsView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-emerald-700 mt-1">
-            +${analytics.totalIncome.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            +{format(analytics.totalIncome)}
           </p>
           <p className="text-[10px] text-slate-400 mt-1">Entradas del periodo</p>
         </div>
@@ -415,7 +423,7 @@ export const ReportsView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-rose-700 mt-1">
-            -${analytics.totalExpenses.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            -{format(analytics.totalExpenses)}
           </p>
           <p className="text-[10px] text-slate-400 mt-1">Salidas del periodo</p>
         </div>
@@ -443,7 +451,7 @@ export const ReportsView: React.FC = () => {
               analytics.netSavings >= 0 ? 'text-blue-700' : 'text-rose-600'
             }`}
           >
-            ${analytics.netSavings.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {format(analytics.netSavings)}
           </p>
           <p className="text-[10px] text-slate-400 mt-1">Superávit / Déficit neto</p>
         </div>
@@ -459,7 +467,7 @@ export const ReportsView: React.FC = () => {
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-slate-900 mt-1">
-            ${analytics.dailyAverageExpense.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {format(analytics.dailyAverageExpense)}
           </p>
           <p className="text-[10px] text-slate-400 mt-1">Ritmo de egreso diario</p>
         </div>
@@ -641,38 +649,47 @@ export const ReportsView: React.FC = () => {
             No se encontraron movimientos registrados con los filtros seleccionados.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
-                  <th className="py-3 px-4">Fecha</th>
-                  <th className="py-3 px-4">Descripción</th>
-                  <th className="py-3 px-4">Categoría</th>
-                  <th className="py-3 px-4">Tipo</th>
-                  <th className="py-3 px-4">Cuenta</th>
-                  <th className="py-3 px-4 text-right">Monto</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {filteredTransactions.map((tx) => {
-                  const isIncome = tx.type === 'INCOME';
-                  const isTransfer = tx.type === 'TRANSFER';
-                  return (
-                    <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-4 font-mono text-slate-500 whitespace-nowrap">
-                        {tx.date}
-                      </td>
-                      <td className="py-3 px-4 font-semibold text-slate-900">
-                        {tx.description}
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <span className="text-slate-600">
-                          {tx.category?.name || 'General'}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 whitespace-nowrap">
+          <>
+            {/* MOBILE VIEW (md:hidden): Compact transaction cards */}
+            <div className="block md:hidden divide-y divide-slate-100">
+              {filteredTransactions.map((tx) => {
+                const isIncome = tx.type === 'INCOME';
+                const isTransfer = tx.type === 'TRANSFER';
+                return (
+                  <div key={tx.id} className="p-3.5 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          {tx.description || tx.category?.name || (isIncome ? 'Ingreso' : 'Gasto')}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5 flex-wrap">
+                          <span>{tx.date}</span>
+                          <span>·</span>
+                          <span>{tx.account?.name || 'Cuenta'}</span>
+                          {tx.category?.name && (
+                            <>
+                              <span>·</span>
+                              <span className="text-slate-600 font-medium">{tx.category.name}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          className={`text-xs sm:text-sm font-bold font-mono tabular-nums block ${
+                            isTransfer
+                              ? 'text-blue-700'
+                              : isIncome
+                              ? 'text-emerald-700'
+                              : 'text-rose-700'
+                          }`}
+                        >
+                          {isIncome ? '+' : isTransfer ? '⇄ ' : '-'} $
+                          {tx.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                        </span>
+                        <span
+                          className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-block mt-0.5 ${
                             isTransfer
                               ? 'bg-blue-100 text-blue-800'
                               : isIncome
@@ -682,28 +699,78 @@ export const ReportsView: React.FC = () => {
                         >
                           {isTransfer ? 'Transferencia' : isIncome ? 'Ingreso' : 'Gasto'}
                         </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
-                        {tx.account?.name || 'Cuenta'}
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-right font-mono font-bold whitespace-nowrap ${
-                          isTransfer
-                            ? 'text-blue-700'
-                            : isIncome
-                            ? 'text-emerald-700'
-                            : 'text-rose-700'
-                        }`}
-                      >
-                        {isIncome ? '+' : isTransfer ? '⇄ ' : '-'} $
-                        {tx.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* DESKTOP VIEW (hidden md:block): Full Detailed Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-wider">
+                    <th className="py-3 px-4">Fecha</th>
+                    <th className="py-3 px-4">Descripción</th>
+                    <th className="py-3 px-4">Categoría</th>
+                    <th className="py-3 px-4">Tipo</th>
+                    <th className="py-3 px-4">Cuenta</th>
+                    <th className="py-3 px-4 text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {filteredTransactions.map((tx) => {
+                    const isIncome = tx.type === 'INCOME';
+                    const isTransfer = tx.type === 'TRANSFER';
+                    return (
+                      <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-4 font-mono text-slate-500 whitespace-nowrap">
+                          {tx.date}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">
+                          {tx.description}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="text-slate-600">
+                            {tx.category?.name || 'General'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              isTransfer
+                                ? 'bg-blue-100 text-blue-800'
+                                : isIncome
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}
+                          >
+                            {isTransfer ? 'Transferencia' : isIncome ? 'Ingreso' : 'Gasto'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                          {tx.account?.name || 'Cuenta'}
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-right font-mono font-bold whitespace-nowrap ${
+                            isTransfer
+                              ? 'text-blue-700'
+                              : isIncome
+                              ? 'text-emerald-700'
+                              : 'text-rose-700'
+                          }`}
+                        >
+                          {isIncome ? '+' : isTransfer ? '⇄ ' : '-'} $
+                          {tx.amount.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Accounting Reconciliation Footer */}

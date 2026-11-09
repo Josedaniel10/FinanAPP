@@ -5,7 +5,7 @@ import { AppError } from '../../errors/app-error.js';
 import { accountRepository } from '../accounts/account.repository.js';
 import { authRepository, AuthRepository } from './auth.repository.js';
 import { RegisterDto, LoginDto } from './auth.schema.js';
-import { AuthSessionResponse, UserWithoutPassword } from './auth.types.js';
+import { AuthSessionResponse, UserWithoutPassword, User } from './auth.types.js';
 
 export class AuthService {
   constructor(private readonly repository: AuthRepository = authRepository) {}
@@ -37,6 +37,8 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       role: 'USER',
+      preferredCurrency: 'USD',
+      hasCompletedOnboarding: false,
     });
 
     // Auto-create default account for the new user
@@ -147,16 +149,78 @@ export class AuthService {
     return safeUser;
   }
 
-  async updateProfile(userId: string, name: string): Promise<UserWithoutPassword> {
-    if (!name || name.trim().length === 0) {
-      throw new AppError(400, 'El nombre no puede estar vacío.');
+  async updateProfile(
+    userId: string,
+    data: { name?: string; preferredCurrency?: string }
+  ): Promise<UserWithoutPassword> {
+    const updates: Partial<User> = {};
+    if (data.name !== undefined) {
+      if (!data.name.trim()) {
+        throw new AppError(400, 'El nombre no puede estar vacío.');
+      }
+      updates.name = data.name.trim();
     }
-    const updated = await this.repository.update(userId, { name: name.trim() });
+    if (data.preferredCurrency !== undefined) {
+      updates.preferredCurrency = data.preferredCurrency.trim().toUpperCase();
+    }
+
+    const updated = await this.repository.update(userId, updates);
     if (!updated) {
       throw new AppError(404, 'Usuario no encontrado.');
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash: _, ...safeUser } = updated;
+    return safeUser;
+  }
+
+  async completeOnboarding(
+    userId: string,
+    data: {
+      preferredCurrency: string;
+      initialBalance?: number;
+      accountName?: string;
+    }
+  ): Promise<UserWithoutPassword> {
+    const currency = (data.preferredCurrency || 'USD').trim().toUpperCase();
+
+    // 1. Update user onboarding status & preferred currency
+    const updatedUser = await this.repository.update(userId, {
+      preferredCurrency: currency,
+      hasCompletedOnboarding: true,
+    });
+
+    if (!updatedUser) {
+      throw new AppError(404, 'Usuario no encontrado.');
+    }
+
+    // 2. Adjust default account or create one
+    const accounts = await accountRepository.findByUserId(userId);
+    const defaultAccount = accounts.find((a) => a.isDefault) || accounts[0];
+
+    const balance =
+      typeof data.initialBalance === 'number' && !isNaN(data.initialBalance)
+        ? Math.max(0, data.initialBalance)
+        : undefined;
+
+    if (defaultAccount) {
+      await accountRepository.update(defaultAccount.id, {
+        currency,
+        ...(data.accountName?.trim() ? { name: data.accountName.trim() } : {}),
+        ...(balance !== undefined ? { balance } : {}),
+      });
+    } else {
+      await accountRepository.create({
+        userId,
+        name: data.accountName?.trim() || 'Cuenta Principal',
+        type: 'CASH',
+        balance: balance !== undefined ? balance : 0,
+        currency,
+        isDefault: true,
+      });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { passwordHash: _, ...safeUser } = updatedUser;
     return safeUser;
   }
 

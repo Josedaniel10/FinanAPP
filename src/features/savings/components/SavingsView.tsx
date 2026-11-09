@@ -18,8 +18,10 @@ import {
 } from 'lucide-react';
 import { DSButton, DSChip, DSModal } from '../../../design-system';
 import { showToast } from '../../../stores/toastStore';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 export const SavingsView: React.FC = () => {
+  const { format, preferredCurrency } = useCurrency();
   const { data: goals = [], isLoading } = useSavingsGoalsQuery();
   const deleteMutation = useDeleteSavingsGoalMutation();
 
@@ -98,11 +100,7 @@ export const SavingsView: React.FC = () => {
             Total Ahorrado
           </p>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-emerald-700 mt-1">
-            $
-            {totalSaved.toLocaleString('es-ES', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {format(totalSaved)}
           </p>
         </div>
 
@@ -111,11 +109,7 @@ export const SavingsView: React.FC = () => {
             Meta Total Acumulada
           </p>
           <p className="text-xl sm:text-2xl font-black font-mono tabular-nums text-slate-900 mt-1">
-            $
-            {totalTarget.toLocaleString('es-ES', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {format(totalTarget)}
           </p>
         </div>
 

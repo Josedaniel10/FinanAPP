@@ -12,15 +12,24 @@ import {
   AlertCircle,
   CheckCircle2,
   Layers,
+  RotateCcw,
+  EyeOff,
+  Crown,
+  Globe,
 } from 'lucide-react';
 import { Category, CategoryType, CreateCategoryPayload } from '../types';
 import { categoryService } from '../services/category.service';
 import { CategoryModal } from './CategoryModal';
+import { useAuth } from '../../auth/hooks/useAuth';
 
 export const CategoriesView: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
+
   const [categories, setCategories] = useState<Category[]>([]);
+  const [excludedCategories, setExcludedCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME' | 'CUSTOM'>('ALL');
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME' | 'CUSTOM' | 'EXCLUDED'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -29,8 +38,12 @@ export const CategoriesView: React.FC = () => {
   const loadCategories = async () => {
     setLoading(true);
     try {
-      const res = await categoryService.getCategories();
-      setCategories(res.data || []);
+      const [resActive, resExcluded] = await Promise.all([
+        categoryService.getCategories(),
+        categoryService.getExcludedCategories().catch(() => ({ data: [] })),
+      ]);
+      setCategories(resActive.data || []);
+      setExcludedCategories(resExcluded.data || []);
     } catch (err) {
       console.error('Error fetching categories:', err);
     } finally {
@@ -48,10 +61,10 @@ export const CategoriesView: React.FC = () => {
   };
 
   const handleOpenEdit = (category: Category) => {
-    if (category.userId === null) {
+    if (category.userId === null && !isAdmin) {
       setFeedback({
         type: 'error',
-        message: 'Las categorías predefinidas del sistema están protegidas y no pueden modificarse.',
+        message: 'Las categorías predefinidas del sistema solo pueden ser modificadas por el Administrador (demo@finanapp.com).',
       });
       return;
     }
@@ -65,13 +78,17 @@ export const CategoriesView: React.FC = () => {
         await categoryService.updateCategory(editingCategory.id, payload);
         setFeedback({
           type: 'success',
-          message: `Categoría "${payload.name}" actualizada con éxito.`,
+          message: editingCategory.userId === null && isAdmin
+            ? `Categoría predeterminada global "${payload.name}" actualizada con éxito.`
+            : `Categoría "${payload.name}" actualizada con éxito.`,
         });
       } else {
         await categoryService.createCategory(payload);
         setFeedback({
           type: 'success',
-          message: `Categoría "${payload.name}" creada con éxito.`,
+          message: payload.isDefault && isAdmin
+            ? `Categoría predeterminada global "${payload.name}" creada para todos los usuarios.`
+            : `Categoría "${payload.name}" creada con éxito.`,
         });
       }
       await loadCategories();
@@ -81,24 +98,21 @@ export const CategoriesView: React.FC = () => {
   };
 
   const handleDelete = async (category: Category) => {
-    if (category.userId === null) {
-      setFeedback({
-        type: 'error',
-        message: 'Las categorías predefinidas del sistema están protegidas y no pueden eliminarse.',
-      });
-      return;
-    }
+    const isSystemDefault = category.userId === null;
+    const confirmMessage = isSystemDefault
+      ? isAdmin
+        ? `¿Estás seguro de que deseas eliminar la categoría predeterminada "${category.name}" globalmente para TODOS los usuarios del sistema?`
+        : `¿Deseas eliminar la categoría predeterminada "${category.name}" de tu lista personal? Podrás restaurarla en cualquier momento desde la pestaña "Ocultas".`
+      : `¿Estás seguro de que deseas eliminar tu categoría personalizada "${category.name}"?`;
 
-    const confirmed = window.confirm(
-      `¿Estás seguro de que deseas eliminar la categoría "${category.name}"?`
-    );
+    const confirmed = window.confirm(confirmMessage);
     if (!confirmed) return;
 
     try {
-      await categoryService.deleteCategory(category.id);
+      const res = await categoryService.deleteCategory(category.id);
       setFeedback({
         type: 'success',
-        message: `Categoría "${category.name}" eliminada correctamente.`,
+        message: res.message || `Categoría "${category.name}" eliminada correctamente.`,
       });
       await loadCategories();
     } catch (err: any) {
@@ -109,8 +123,31 @@ export const CategoriesView: React.FC = () => {
     }
   };
 
+  const handleRestore = async (category: Category) => {
+    try {
+      const res = await categoryService.restoreCategory(category.id);
+      setFeedback({
+        type: 'success',
+        message: res.message || `Categoría predeterminada "${category.name}" restaurada en tu cuenta personal.`,
+      });
+      await loadCategories();
+    } catch (err: any) {
+      setFeedback({
+        type: 'error',
+        message: err.message || 'No se pudo restaurar la categoría.',
+      });
+    }
+  };
+
   // Filtered categories
   const filteredCategories = useMemo(() => {
+    if (activeFilter === 'EXCLUDED') {
+      return excludedCategories.filter((c) => {
+        if (!searchTerm) return true;
+        return c.name.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+    }
+
     return categories.filter((c) => {
       if (activeFilter === 'EXPENSE' && c.type !== 'EXPENSE') return false;
       if (activeFilter === 'INCOME' && c.type !== 'INCOME') return false;
@@ -123,7 +160,7 @@ export const CategoriesView: React.FC = () => {
 
       return true;
     });
-  }, [categories, activeFilter, searchTerm]);
+  }, [categories, excludedCategories, activeFilter, searchTerm]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -135,7 +172,7 @@ export const CategoriesView: React.FC = () => {
   }, [categories]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="w-full space-y-5 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -289,6 +326,20 @@ export const CategoriesView: React.FC = () => {
             <Tag className="w-3.5 h-3.5" />
             <span>Tus Categorías ({stats.custom})</span>
           </button>
+          {excludedCategories.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setActiveFilter('EXCLUDED')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeFilter === 'EXCLUDED'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-amber-700 hover:bg-amber-50'
+              }`}
+            >
+              <EyeOff className="w-3.5 h-3.5" />
+              <span>Ocultas ({excludedCategories.length})</span>
+            </button>
+          )}
         </div>
 
         {/* Search input */}
@@ -315,11 +366,16 @@ export const CategoriesView: React.FC = () => {
           {filteredCategories.map((cat) => {
             const isCustom = cat.userId !== null;
             const isExpense = cat.type === 'EXPENSE';
+            const isExcludedView = activeFilter === 'EXCLUDED';
 
             return (
               <div
                 key={cat.id}
-                className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                className={`bg-white rounded-2xl p-4 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${
+                  isExcludedView
+                    ? 'border-amber-200/90 bg-amber-50/20'
+                    : 'border-slate-200'
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -347,15 +403,20 @@ export const CategoriesView: React.FC = () => {
                   </h3>
 
                   <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400">
-                    {isCustom ? (
+                    {isExcludedView ? (
+                      <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                        <EyeOff className="w-3 h-3" />
+                        Oculta de tu lista
+                      </span>
+                    ) : isCustom ? (
                       <span className="inline-flex items-center gap-1 text-teal-600 font-medium">
                         <Tag className="w-3 h-3" />
                         Personalizada
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-slate-400">
-                        <Lock className="w-3 h-3" />
-                        Sistema
+                      <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                        <Globe className="w-3 h-3 text-emerald-600" />
+                        {isAdmin ? 'Sistema (Global)' : 'Predeterminada'}
                       </span>
                     )}
                   </div>
@@ -363,7 +424,16 @@ export const CategoriesView: React.FC = () => {
 
                 {/* Actions footer */}
                 <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-end gap-1">
-                  {isCustom ? (
+                  {isExcludedView ? (
+                    <button
+                      type="button"
+                      onClick={() => handleRestore(cat)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restaurar para mí</span>
+                    </button>
+                  ) : isCustom ? (
                     <>
                       <button
                         type="button"
@@ -384,10 +454,38 @@ export const CategoriesView: React.FC = () => {
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </>
+                  ) : isAdmin ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(cat)}
+                        className="p-1.5 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                        title="Editar categoría global (para todos)"
+                        aria-label="Editar categoría global"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cat)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Eliminar categoría global (para todos)"
+                        aria-label="Eliminar categoría global"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
                   ) : (
-                    <span className="text-[10px] text-slate-400 italic px-1">
-                      Predefinida
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(cat)}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                      title="Eliminar categoría de mi lista personal"
+                      aria-label="Eliminar categoría de mi lista personal"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Eliminar para mí</span>
+                    </button>
                   )}
                 </div>
               </div>
@@ -397,22 +495,26 @@ export const CategoriesView: React.FC = () => {
       ) : (
         <div className="bg-white rounded-3xl p-10 border border-dashed border-slate-300 text-center max-w-md mx-auto space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-            <Tag className="w-6 h-6" />
+            {activeFilter === 'EXCLUDED' ? <EyeOff className="w-6 h-6 text-amber-500" /> : <Tag className="w-6 h-6" />}
           </div>
           <h3 className="text-sm font-bold text-slate-800">
-            No se encontraron categorías
+            {activeFilter === 'EXCLUDED' ? 'No tienes categorías ocultas' : 'No se encontraron categorías'}
           </h3>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Prueba ajustando los filtros o crea una nueva categoría personalizada para tus movimientos.
+            {activeFilter === 'EXCLUDED'
+              ? 'Todas las categorías predeterminadas del sistema están activas y visibles en tu cuenta.'
+              : 'Prueba ajustando los filtros o crea una nueva categoría personalizada para tus movimientos.'}
           </p>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Crear Categoría</span>
-          </button>
+          {activeFilter !== 'EXCLUDED' && (
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Crear Categoría</span>
+            </button>
+          )}
         </div>
       )}
 

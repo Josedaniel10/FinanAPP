@@ -33,10 +33,24 @@ export const authService = {
     });
   },
 
-  async updateProfile(name: string): Promise<UserResponse> {
+  async updateProfile(
+    data: string | { name?: string; preferredCurrency?: string }
+  ): Promise<UserResponse> {
+    const payload = typeof data === 'string' ? { name: data } : data;
     return apiClient<UserResponse>('/auth/profile', {
       method: 'PUT',
-      data: { name },
+      data: payload,
+    });
+  },
+
+  async completeOnboarding(data: {
+    preferredCurrency: string;
+    initialBalance?: number;
+    accountName?: string;
+  }): Promise<UserResponse> {
+    return apiClient<UserResponse>('/auth/onboarding', {
+      method: 'POST',
+      data,
     });
   },
 

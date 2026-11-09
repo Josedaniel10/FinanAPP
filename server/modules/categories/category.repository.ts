@@ -1,4 +1,5 @@
 import { CategoryModel, Category, CategoryType } from './category.model.js';
+import { UserModel } from '../auth/user.model.js';
 
 function mapDocToCategory(doc: any): Category {
   return {
@@ -16,8 +17,16 @@ function mapDocToCategory(doc: any): Category {
 
 export class CategoryRepository {
   async findAllForUser(userId: string): Promise<Category[]> {
+    const user = await UserModel.findById(userId).select('excludedCategoryIds').lean();
+    const excludedIds = user?.excludedCategoryIds || [];
+
+    const defaultFilter: Record<string, any> = { userId: null };
+    if (excludedIds.length > 0) {
+      defaultFilter._id = { $nin: excludedIds };
+    }
+
     const docs = await CategoryModel.find({
-      $or: [{ userId: null }, { userId }],
+      $or: [defaultFilter, { userId }],
     })
       .sort({ type: 1, name: 1 })
       .lean();
@@ -50,7 +59,7 @@ export class CategoryRepository {
   }
 
   async create(categoryData: {
-    userId: string;
+    userId: string | null;
     name: string;
     type: CategoryType;
     icon: string;
@@ -91,6 +100,33 @@ export class CategoryRepository {
   async delete(id: string): Promise<boolean> {
     const res = await CategoryModel.findByIdAndDelete(id);
     return Boolean(res);
+  }
+
+  async excludeCategoryForUser(userId: string, categoryId: string): Promise<boolean> {
+    const res = await UserModel.findByIdAndUpdate(userId, {
+      $addToSet: { excludedCategoryIds: categoryId },
+    });
+    return Boolean(res);
+  }
+
+  async restoreCategoryForUser(userId: string, categoryId: string): Promise<boolean> {
+    const res = await UserModel.findByIdAndUpdate(userId, {
+      $pull: { excludedCategoryIds: categoryId },
+    });
+    return Boolean(res);
+  }
+
+  async getExcludedCategoriesForUser(userId: string): Promise<Category[]> {
+    const user = await UserModel.findById(userId).select('excludedCategoryIds').lean();
+    const excludedIds = user?.excludedCategoryIds || [];
+    if (!excludedIds.length) return [];
+    const docs = await CategoryModel.find({
+      _id: { $in: excludedIds },
+      userId: null,
+    })
+      .sort({ type: 1, name: 1 })
+      .lean();
+    return docs.map(mapDocToCategory);
   }
 }
 

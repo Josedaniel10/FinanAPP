@@ -2,6 +2,7 @@ import React from 'react';
 import { SavingsGoal } from '../services/savings.service';
 import { PiggyBank, Target, Calendar, Plus, Edit2, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import { DSButton } from '../../../design-system';
+import { useCurrency } from '../../../shared/hooks/useCurrency';
 
 interface SavingsCardProps {
   goal: SavingsGoal;
@@ -16,6 +17,7 @@ export const SavingsCard: React.FC<SavingsCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const { format } = useCurrency();
   const percent = Math.min(
     100,
     Math.round((goal.currentAmount / goal.targetAmount) * 100)
@@ -121,16 +123,16 @@ export const SavingsCard: React.FC<SavingsCardProps> = ({
 
           <div className="flex items-center justify-between text-xs mt-2 text-slate-600 font-mono">
             <span>
-              Ahorrado: <strong className="text-slate-900 font-bold">${goal.currentAmount.toFixed(2)}</strong>
+              Ahorrado: <strong className="text-slate-900 font-bold">{format(goal.currentAmount)}</strong>
             </span>
             <span>
-              Meta: <strong className="text-slate-900 font-bold">${goal.targetAmount.toFixed(2)}</strong>
+              Meta: <strong className="text-slate-900 font-bold">{format(goal.targetAmount)}</strong>
             </span>
           </div>
 
           {!isCompleted && (
             <p className="text-[11px] text-slate-400 mt-1 text-right">
-              Faltan <strong className="font-mono text-slate-700 font-bold">${remaining.toFixed(2)}</strong>
+              Faltan <strong className="font-mono text-slate-700 font-bold">{format(remaining)}</strong>
             </p>
           )}
         </div>
