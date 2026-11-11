@@ -21,10 +21,11 @@ import { UserProfileView } from './features/profile/components/UserProfileView';
 import { OnboardingModal } from './features/onboarding/components/OnboardingModal';
 import { DSFab, DSToastContainer } from './design-system';
 import { TransactionModal } from './features/transactions/components/TransactionModal';
+import { VoiceTransactionModal } from './features/transactions/components/VoiceTransactionModal';
 import { useAccountsQuery } from './features/accounts/hooks/useAccountsQuery';
 import { useCreateTransactionMutation } from './features/transactions/hooks/useTransactionsQuery';
 import { categoryService } from './features/categories/services/category.service';
-import { Category } from './features/transactions/types';
+import { Category, CreateTransactionPayload } from './features/transactions/types';
 import { Wallet, Plus } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
@@ -32,8 +33,10 @@ const MainAppContent: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const { activeTab, setActiveTab } = useUIStore();
 
-  // Quick Mobile Transaction FAB State
+  // Quick Mobile Transaction FAB & Voice AI State
   const [isFabModalOpen, setIsFabModalOpen] = useState(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [prefilledVoiceTx, setPrefilledVoiceTx] = useState<Partial<CreateTransactionPayload> | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const { data: accounts = [] } = useAccountsQuery();
   const createTxMutation = useCreateTransactionMutation();
@@ -77,8 +80,11 @@ const MainAppContent: React.FC = () => {
 
         {/* Main Content Column */}
         <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-          {/* Clean Top Header (Breadcrumb, mobile menu button, profile avatar trigger, NO logout button) */}
-          <AppHeader onOpenProfile={() => setActiveTab('profile')} />
+          {/* Clean Top Header (Breadcrumb, mobile menu button, profile avatar trigger, Voice AI) */}
+          <AppHeader
+            onOpenProfile={() => setActiveTab('profile')}
+            onOpenVoiceAI={() => setIsVoiceModalOpen(true)}
+          />
 
           {/* Main Content Area with consistent global padding and bottom dock clearance */}
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-6 md:py-8 pb-32 sm:pb-36 md:pb-10">
@@ -98,6 +104,7 @@ const MainAppContent: React.FC = () => {
                     onNavigateToSavings={() => setActiveTab('savings')}
                     onNavigateToReports={() => setActiveTab('reports')}
                     onNavigateToProfile={() => setActiveTab('profile')}
+                    onOpenVoiceAI={() => setIsVoiceModalOpen(true)}
                   />
                 )}
                 {activeTab === 'history' && (
@@ -134,14 +141,37 @@ const MainAppContent: React.FC = () => {
         {/* Quick Add Bottom Sheet / Modal Triggered by FAB on Mobile */}
         <TransactionModal
           isOpen={isFabModalOpen}
-          onClose={() => setIsFabModalOpen(false)}
+          onClose={() => {
+            setIsFabModalOpen(false);
+            setPrefilledVoiceTx(null);
+          }}
           onSave={async (payload) => {
             await createTxMutation.mutateAsync(payload);
           }}
           categories={categories}
           accounts={accounts as any}
+          initialTransaction={prefilledVoiceTx}
           defaultType="EXPENSE"
+          onOpenVoiceAI={() => {
+            setIsFabModalOpen(false);
+            setIsVoiceModalOpen(true);
+          }}
           onCategoryCreated={(newCat) => setCategories((prev) => [...prev, newCat])}
+        />
+
+        {/* Interactive AI Voice Transaction Modal */}
+        <VoiceTransactionModal
+          isOpen={isVoiceModalOpen}
+          onClose={() => setIsVoiceModalOpen(false)}
+          categories={categories}
+          accounts={accounts as any}
+          onSaveTransaction={async (payload) => {
+            await createTxMutation.mutateAsync(payload);
+          }}
+          onOpenFullForm={(prefilled) => {
+            setPrefilledVoiceTx(prefilled);
+            setIsFabModalOpen(true);
+          }}
         />
 
         {/* Fast First-Time Onboarding Modal */}

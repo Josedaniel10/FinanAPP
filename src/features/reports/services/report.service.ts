@@ -41,6 +41,30 @@ export interface PeriodAnalytics {
     expense: number;
     savings: number;
   }[];
+  dailyTrend: {
+    date: string;
+    dayLabel: string;
+    income: number;
+    expense: number;
+    net: number;
+    count: number;
+  }[];
+  cumulativeTrend: {
+    label: string;
+    income: number;
+    expense: number;
+    net: number;
+    cumulativeSavings: number;
+  }[];
+  rule503020: {
+    needsAmount: number;
+    needsPercentage: number;
+    wantsAmount: number;
+    wantsPercentage: number;
+    savingsAmount: number;
+    savingsPercentage: number;
+    baseIncome: number;
+  };
 }
 
 export const reportService = {
@@ -97,7 +121,28 @@ export const reportService = {
       OTHER: 'Otro',
     };
 
+    const dailyMap = new Map<string, { date: string; dayLabel: string; income: number; expense: number; count: number }>();
+
     for (const tx of transactions) {
+      // Daily tracking
+      const dateKey = tx.date;
+      const dateObj = new Date(tx.date + 'T00:00:00');
+      const dayLabel = !isNaN(dateObj.getTime())
+        ? dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        : dateKey;
+
+      const dailyData = dailyMap.get(dateKey) || {
+        date: dateKey,
+        dayLabel,
+        income: 0,
+        expense: 0,
+        count: 0,
+      };
+      if (tx.type === 'INCOME') dailyData.income += tx.amount;
+      if (tx.type === 'EXPENSE') dailyData.expense += tx.amount;
+      dailyData.count += 1;
+      dailyMap.set(dateKey, dailyData);
+
       if (tx.type === 'INCOME') {
         totalIncome += tx.amount;
       } else if (tx.type === 'EXPENSE') {
@@ -186,6 +231,67 @@ export const reportService = {
       }))
       .sort((a, b) => a.monthLabel.localeCompare(b.monthLabel));
 
+    // Format daily trend sorted chronologically
+    const dailyTrend = Array.from(dailyMap.values())
+      .map((d) => ({
+        date: d.date,
+        dayLabel: d.dayLabel,
+        income: Math.round(d.income * 100) / 100,
+        expense: Math.round(d.expense * 100) / 100,
+        net: Math.round((d.income - d.expense) * 100) / 100,
+        count: d.count,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Cumulative trend
+    let runningCumulative = 0;
+    const trendSource = monthlyTrend.length > 1
+      ? monthlyTrend.map((m) => ({
+          label: m.monthLabel,
+          income: m.income,
+          expense: m.expense,
+          net: m.savings,
+        }))
+      : dailyTrend.map((d) => ({
+          label: d.dayLabel,
+          income: d.income,
+          expense: d.expense,
+          net: d.net,
+        }));
+
+    const cumulativeTrend = trendSource.map((pt) => {
+      runningCumulative += pt.net;
+      return {
+        label: pt.label,
+        income: pt.income,
+        expense: pt.expense,
+        net: pt.net,
+        cumulativeSavings: Math.round(runningCumulative * 100) / 100,
+      };
+    });
+
+    // 50/30/20 Rule Analysis
+    const needsRegex = /aliment|comid|supermerc|viviend|renta|alquiler|hogar|servicio|luz|agua|gas|internet|electric|salud|medic|farmac|transport|gasolin|combustibl|educac|colegio|impuesto|seguro/i;
+    let needsAmount = 0;
+    for (const cat of categoryBreakdown) {
+      if (needsRegex.test(cat.categoryName)) {
+        needsAmount += cat.total;
+      }
+    }
+    const wantsAmount = Math.max(0, totalExpenses - needsAmount);
+    const savingsAmount = Math.max(0, netSavings);
+    const baseIncome = totalIncome > 0 ? totalIncome : (totalExpenses > 0 ? totalExpenses : 1);
+
+    const rule503020 = {
+      needsAmount: Math.round(needsAmount * 100) / 100,
+      needsPercentage: Math.min(100, Math.round((needsAmount / baseIncome) * 100)),
+      wantsAmount: Math.round(wantsAmount * 100) / 100,
+      wantsPercentage: Math.min(100, Math.round((wantsAmount / baseIncome) * 100)),
+      savingsAmount: Math.round(savingsAmount * 100) / 100,
+      savingsPercentage: Math.min(100, Math.round((savingsAmount / baseIncome) * 100)),
+      baseIncome: Math.round(baseIncome * 100) / 100,
+    };
+
     return {
       totalIncome: Math.round(totalIncome * 100) / 100,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
@@ -198,6 +304,9 @@ export const reportService = {
       categoryBreakdown,
       paymentMethodBreakdown,
       monthlyTrend,
+      dailyTrend,
+      cumulativeTrend,
+      rule503020,
     };
   },
 
@@ -384,6 +493,60 @@ export const reportService = {
 
       currentY = (doc as any).lastAutoTable.finalY + 7;
     }
+
+    // 50/30/20 Budget Methodology Table
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2]);
+    doc.text('Evaluación Metodológica 50/30/20', 14, currentY);
+
+    autoTable(doc, {
+      startY: currentY + 3,
+      head: [['Pilar Financiero', 'Meta Sugerida', 'Monto Real', 'Porcentaje Real', 'Estado']],
+      body: [
+        [
+          'Necesidades Básicas (Vivienda, Servicios, Comida)',
+          '50%',
+          `${sym} ${analytics.rule503020.needsAmount.toFixed(2)}`,
+          `${analytics.rule503020.needsPercentage}%`,
+          analytics.rule503020.needsPercentage <= 50 ? 'Óptimo' : 'Superado',
+        ],
+        [
+          'Deseos & Estilo de Vida (Ocio, Compras)',
+          '30%',
+          `${sym} ${analytics.rule503020.wantsAmount.toFixed(2)}`,
+          `${analytics.rule503020.wantsPercentage}%`,
+          analytics.rule503020.wantsPercentage <= 30 ? 'Controlado' : 'Excedido',
+        ],
+        [
+          'Ahorro & Inversión (Superávit, Fondos)',
+          '20%',
+          `${sym} ${analytics.rule503020.savingsAmount.toFixed(2)}`,
+          `${analytics.rule503020.savingsPercentage}%`,
+          analytics.rule503020.savingsPercentage >= 20 ? 'Excelente' : 'A Mejorar',
+        ],
+      ],
+      theme: 'grid',
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+      },
+      bodyStyles: {
+        fontSize: 7.5,
+        textColor: [51, 65, 85],
+      },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'right', fontStyle: 'bold' },
+        3: { halign: 'center' },
+        4: { halign: 'center', fontStyle: 'bold' },
+      },
+      margin: { left: 14, right: 14 },
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 7;
 
     // Detailed Transactions Ledger
     doc.setFont('helvetica', 'bold');

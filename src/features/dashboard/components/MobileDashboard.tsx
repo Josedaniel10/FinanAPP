@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   ChevronRight,
   TrendingUp,
+  Mic,
 } from 'lucide-react';
 import { NotificationsModal, NotificationItem } from '../../../shared/components/NotificationsModal';
 
@@ -38,6 +39,7 @@ export interface MobileDashboardProps {
   onNavigateToAccounts?: () => void;
   onNavigateToBudgets?: () => void;
   onNavigateToProfile?: () => void;
+  onOpenVoiceAI?: () => void;
 }
 
 export const MobileDashboard: React.FC<MobileDashboardProps> = ({
@@ -59,6 +61,7 @@ export const MobileDashboard: React.FC<MobileDashboardProps> = ({
   onNavigateToAccounts,
   onNavigateToBudgets,
   onNavigateToProfile,
+  onOpenVoiceAI,
 }) => {
   const { user } = useAuth();
   const { format, preferredCurrency } = useCurrency();
@@ -172,19 +175,21 @@ export const MobileDashboard: React.FC<MobileDashboardProps> = ({
             </div>
           </button>
 
-          {/* Frosted Notification Bell Button */}
-          <button
-            type="button"
-            onClick={() => setIsNotificationsOpen(true)}
-            className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 active:scale-95 backdrop-blur-md border border-white/15 flex items-center justify-center relative cursor-pointer transition-all shadow-xs"
-            title="Notificaciones"
-            aria-label="Ver notificaciones y alertas"
-          >
-            <Bell className="w-5 h-5 text-white/90" />
-            {hasAlerts && (
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 absolute top-2.5 right-2.5 ring-2 ring-slate-950 animate-pulse" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Frosted Notification Bell Button */}
+            <button
+              type="button"
+              onClick={() => setIsNotificationsOpen(true)}
+              className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-full bg-white/10 hover:bg-white/20 active:scale-95 backdrop-blur-md border border-white/15 flex items-center justify-center relative cursor-pointer transition-all shadow-xs"
+              title="Notificaciones"
+              aria-label="Ver notificaciones y alertas"
+            >
+              <Bell className="w-5 h-5 text-white/90" />
+              {hasAlerts && (
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 absolute top-2.5 right-2.5 ring-2 ring-slate-950 animate-pulse" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Central Balance Display */}
@@ -258,8 +263,19 @@ export const MobileDashboard: React.FC<MobileDashboardProps> = ({
         </div>
       </div>
 
-      {/* 2. QUICK ACTIONS BAR (Deposit, Transfer, Withdraw) */}
-      <div>
+      {/* 2. QUICK ACTIONS BAR (Deposit, Transfer, Withdraw) + Voice AI */}
+      <div className="space-y-2.5">
+        {onOpenVoiceAI && (
+          <button
+            type="button"
+            onClick={onOpenVoiceAI}
+            className="w-full min-h-[48px] h-12 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-2xs text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+          >
+            <Mic className="w-4 h-4 stroke-[2.5]" />
+            <span>Registro por voz</span>
+          </button>
+        )}
+
         <div className="flex items-center justify-between gap-2.5 sm:gap-3">
           {/* Deposit / Ingreso */}
           <button

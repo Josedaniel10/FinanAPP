@@ -11,6 +11,7 @@ import { transactionService } from '../services/transaction.service';
 import { TransactionFiltersBar } from './TransactionFiltersBar';
 import { TransactionDetailModal } from './TransactionDetailModal';
 import { TransactionModal } from './TransactionModal';
+import { VoiceTransactionModal } from './VoiceTransactionModal';
 import {
   History,
   TrendingUp,
@@ -50,6 +51,7 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalType, setModalType] = useState<TransactionType>('EXPENSE');
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
 
   // Deletion state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -215,6 +217,14 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
 
         {/* Quick action buttons to record transactions */}
         <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsVoiceModalOpen(true)}
+            className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 group"
+          >
+            <span className="text-sm group-hover:scale-110 transition-transform">🎙️</span>
+            <span>Añadir por Voz (IA)</span>
+          </button>
           <button
             onClick={() => handleOpenNew('INCOME')}
             className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -643,7 +653,26 @@ export const FinancialHistoryView: React.FC<FinancialHistoryViewProps> = () => {
         accounts={accounts}
         initialTransaction={editTx}
         defaultType={modalType}
+        onOpenVoiceAI={() => {
+          setIsModalOpen(false);
+          setIsVoiceModalOpen(true);
+        }}
         onCategoryCreated={(newCat) => setCategories((prev) => [...prev, newCat])}
+      />
+
+      {/* Modal de Voz IA */}
+      <VoiceTransactionModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        categories={categories}
+        accounts={accounts}
+        onSaveTransaction={async (payload) => {
+          await handleSaveTransaction(payload);
+        }}
+        onOpenFullForm={(prefilled) => {
+          setEditTx(prefilled as any);
+          setIsModalOpen(true);
+        }}
       />
     </div>
   );

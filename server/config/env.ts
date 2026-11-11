@@ -32,6 +32,7 @@ const envSchema = z.object({
     .transform((val) =>
       val && val.trim().length > 0 ? val.trim() : 'finanapp'
     ),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

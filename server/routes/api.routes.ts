@@ -6,6 +6,7 @@ import accountRoutes from '../modules/accounts/account.routes.js';
 import budgetRoutes from '../modules/budgets/budget.routes.js';
 import savingsRoutes from '../modules/savings/savings.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
+import aiRoutes from '../modules/ai/ai.routes.js';
 
 import mongoose from 'mongoose';
 
@@ -32,5 +33,6 @@ apiRouter.use('/accounts', accountRoutes);
 apiRouter.use('/budgets', budgetRoutes);
 apiRouter.use('/savings', savingsRoutes);
 apiRouter.use('/admin', adminRoutes);
+apiRouter.use('/ai', aiRoutes);
 
 export default apiRouter;

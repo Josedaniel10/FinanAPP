@@ -33,9 +33,10 @@ interface TransactionModalProps {
   onSave: (payload: CreateTransactionPayload, editId?: string) => Promise<void>;
   categories: Category[];
   accounts: Account[];
-  initialTransaction?: Transaction | null;
+  initialTransaction?: Transaction | Partial<CreateTransactionPayload> | null;
   defaultType?: TransactionType;
   onCategoryCreated?: (category: Category) => void;
+  onOpenVoiceAI?: () => void;
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
@@ -47,6 +48,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   initialTransaction,
   defaultType = 'EXPENSE',
   onCategoryCreated,
+  onOpenVoiceAI,
 }) => {
   const { preferredCurrency } = useCurrency();
   const [localCategories, setLocalCategories] = useState<Category[]>(initialCategories);
@@ -91,16 +93,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   useEffect(() => {
     if (initialTransaction) {
-      setType(initialTransaction.type);
-      setAmount(String(initialTransaction.amount));
-      setDescription(initialTransaction.description);
-      setCategoryId(initialTransaction.categoryId);
-      setAccountId(initialTransaction.accountId);
+      setType(initialTransaction.type || defaultType);
+      setAmount(
+        initialTransaction.amount !== undefined ? String(initialTransaction.amount) : ''
+      );
+      setDescription(initialTransaction.description || '');
+      setCategoryId(initialTransaction.categoryId || '');
+      setAccountId(initialTransaction.accountId || '');
       setDestinationAccountId(initialTransaction.destinationAccountId || '');
       setDestinationAmount(
         initialTransaction.destinationAmount ? String(initialTransaction.destinationAmount) : ''
       );
-      setDate(initialTransaction.date);
+      setDate(initialTransaction.date || new Date().toISOString().split('T')[0] || '');
       setRecurrence(initialTransaction.recurrence || 'NONE');
       setPaymentMethod(initialTransaction.paymentMethod || 'CASH');
       setNotes(initialTransaction.notes || '');
@@ -179,10 +183,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         notes: notes.trim() || undefined,
       };
 
-      await onSave(payload, initialTransaction?.id);
+      const editId =
+        initialTransaction && 'id' in initialTransaction
+          ? (initialTransaction as Transaction).id
+          : undefined;
+
+      await onSave(payload, editId);
       showToast({
         type: 'success',
-        message: initialTransaction ? 'Movimiento actualizado correctamente' : 'Movimiento registrado con éxito',
+        message: editId ? 'Movimiento actualizado correctamente' : 'Movimiento registrado con éxito',
       });
       onClose();
     } catch (err: any) {
@@ -227,6 +236,26 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <DSAlert type="error" message={error} onClose={() => setError(null)} />}
+
+          {/* Quick Voice AI fill shortcut */}
+          {!initialTransaction && onOpenVoiceAI && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenVoiceAI();
+              }}
+              className="w-full p-2.5 px-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 hover:border-emerald-300 text-emerald-900 text-xs font-bold flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all shadow-2xs group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base group-hover:scale-110 transition-transform">🎙️</span>
+                <span>¿Prefieres hablar? Rellenar con IA por Voz</span>
+              </div>
+              <span className="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-2 py-1 rounded-lg shadow-xs">
+                Abrir Voz →
+              </span>
+            </button>
+          )}
 
           {/* Type Selector (Horizontal Segmented Buttons with 44px min height) */}
           <div className="p-1 bg-slate-100 rounded-2xl grid grid-cols-3 gap-1">

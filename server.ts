@@ -26,12 +26,12 @@ export function createApp() {
 
   // 2. Middlewares
   app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '15mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
   // Middleware ensuring MongoDB Atlas is ready for transactional API requests
   app.use('/api/v1', (req, res, next) => {
-    if (req.path === '/health') {
+    if (req.path === '/health' || req.path.startsWith('/ai')) {
       return next();
     }
     if (mongoose.connection.readyState !== 1) {
@@ -57,7 +57,6 @@ export function createApp() {
 }
 
 async function bootstrap() {
-  await initializeDatabase();
   const app = createApp();
 
   // Frontend serving
@@ -84,6 +83,11 @@ async function bootstrap() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 FinanAPP Server running on http://localhost:${PORT}`);
     console.log(`📡 FinanAPP API v1 ready at http://localhost:${PORT}/api/v1`);
+
+    // Initialize database in background so port 3000 is open immediately
+    initializeDatabase().catch((err) => {
+      console.warn('⚠️ Background database initialization notice:', err?.message || err);
+    });
   });
 
   process.on('SIGINT', async () => {

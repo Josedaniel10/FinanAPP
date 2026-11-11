@@ -33,6 +33,7 @@ import {
   PiggyBank,
   ArrowRight,
   BarChart3,
+  Mic,
 } from 'lucide-react';
 import { useCurrency } from '../../../shared/hooks/useCurrency';
 
@@ -43,6 +44,7 @@ interface WelcomeDashboardProps {
   onNavigateToSavings?: () => void;
   onNavigateToReports?: () => void;
   onNavigateToProfile?: () => void;
+  onOpenVoiceAI?: () => void;
 }
 
 export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
@@ -52,6 +54,7 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
   onNavigateToSavings,
   onNavigateToReports,
   onNavigateToProfile,
+  onOpenVoiceAI,
 }) => {
   const { user } = useAuth();
   const { format, preferredCurrency } = useCurrency();
@@ -176,6 +179,7 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
           onViewAllTransactions={onNavigateToHistory}
           onSelectTransaction={handleViewDetail}
           onNavigateToProfile={onNavigateToProfile}
+          onOpenVoiceAI={onOpenVoiceAI}
         />
       </div>
 
@@ -199,14 +203,14 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {onNavigateToReports && (
+          {onOpenVoiceAI && (
             <button
               type="button"
-              onClick={onNavigateToReports}
-              className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all hover:-translate-y-0.5 shadow-2xs text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              onClick={onOpenVoiceAI}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs transition-all hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
             >
-              <BarChart3 className="w-4 h-4 text-emerald-600" />
-              <span>Reportes</span>
+              <Mic className="w-4 h-4 stroke-[2.5]" />
+              <span>Registro por voz</span>
             </button>
           )}
 
